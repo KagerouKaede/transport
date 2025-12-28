@@ -16,11 +16,13 @@ public abstract class Purchaser extends Poi
 {
     private static final Logger logger = LogManager.getLogger(Purchaser.class);
 
-    protected static final double threshold = 0.8;
+    protected static double PURCHASE_THRESHOLD;
 
     protected List<String> upstreamPoiUuid = new ArrayList<>();
     /** 运往本 POI 的订单，若无则为 {@code null} */
     protected Demand demand = null;
+
+    public static void setPurchaseThreshold(int threshold) { PURCHASE_THRESHOLD = threshold / 100.0; }
 
     public Purchaser(String uuid, String name, ProductType productType, Coordinate position, int maxStock)
     {
@@ -44,7 +46,10 @@ public abstract class Purchaser extends Poi
      */
     protected void tryGenerateDemand(double stock)
     {
-        if (demand != null || stock > threshold * maxStock) return;
+        if (demand != null ||
+            !DemandManager.allowNewDemand() ||
+            stock > PURCHASE_THRESHOLD * maxStock)
+            return;
 
         int quantity = productType.getRandQuantity();
         if (stock + quantity > maxStock) return;

@@ -79,7 +79,7 @@ public class DataController extends Controller
         }
 
         // 4. 同步新解到车辆，并更新 CarStatistics
-        mosa.syncAssignmentsToCars(bestSolution, CarManager.carList.values());
+        mosa.syncAssignmentsToCars(bestSolution, CarManager.carMap.values());
         mosa.updateCarStats(bestSolution); // 你已实现的方法
 
         // 5. 返回成功
@@ -97,7 +97,7 @@ public class DataController extends Controller
 
         try
         {
-            for(Car car : CarManager.carList.values())
+            for(Car car : CarManager.carMap.values())
             {
                 CarStatistics statistics = car.getStatistics();
                 Map<String, String> data = new HashMap<>();
@@ -140,7 +140,7 @@ public class DataController extends Controller
     public void getDestination()
     {
         String uuid = getPara("UUID");
-        Car car = CarManager.carList.get(uuid);
+        Car car = CarManager.carMap.get(uuid);
         Map<String, Double> dest = null;
 
         // 车辆计时器滴答一次并在计时器归零时进行车辆状态转换

@@ -14,55 +14,60 @@ import com.tsAdmin.model.Car.CarState;
 
 public class CarManager
 {
-    public static Map<String, Car> carList = new HashMap<>();
+    // TODO: 封装为私有
+    public static Map<String, Car> carMap = new HashMap<>();
 
+    // LOADS 元素数一定要等于 VOLUME 元素数
     private static final int[] LOADS = { 2, 5, 8, 12, 18, 24, 30, 35 };
     private static final int[] VOLUMES = { 12, 16, 32, 48, 64, 86, 108, 140 };
     private static final Coordinate defaultLocation = new Coordinate(30.67646, 104.10248);
 
     public static void init()
     {
-        carList.clear();
+        carMap.clear();
 
-        int carNum = ConfigLoader.getInt("CarManager.car_num", 100);
-        int realNum = 0;    // (int)DBManager.getCount("car");
-
-        if (realNum < carNum)
+        if (DBManager.getCount("car") <= 0)
         {
-            for (int i = 0; i < carNum - realNum; i++)
+            int carNum = ConfigLoader.getInt("CarManager.car_num");
+
+            for (int i = 0; i < carNum; i++)
             {
                 String uuid = UUID.randomUUID().toString().replace("-", "");
 
-                int loadIdx = Main.RANDOM.nextInt(LOADS.length);
-                int volumeIdx = Main.RANDOM.nextInt(VOLUMES.length);
-                int maxLoad = LOADS[loadIdx];
-                int maxVolume = VOLUMES[volumeIdx];
+                int randIdx = Main.RANDOM.nextInt(LOADS.length);
+                int maxLoad = LOADS[randIdx];
+                int maxVolume = VOLUMES[randIdx];
 
                 Car car = new Car(uuid, maxLoad, maxVolume, new Coordinate(getRandomLocation()));
-                DBManager.saveCar(car);
+                carMap.put(uuid, car);
             }
         }
-
-        List<Map<String, Object>> dataSet = DBManager.getCarList();
-        for (Map<String, Object> carData : dataSet)
+        else
         {
-            String uuid = carData.get("UUID").toString();
-            int maxLoad = (int)carData.get("maxload");
-            int maxVolume = (int)carData.get("maxvolume");
-            double lat = (double)carData.get("lat");
-            double lon = (double)carData.get("lon");
+            // TODO: 车辆统计数据也需要存到数据库
+            List<Map<String, Object>> dataList = DBManager.getCarList();
+            for (Map<String, Object> data : dataList)
+            {
+                String uuid = data.get("UUID").toString();
+                int maxLoad = (int)data.get("maxload");
+                int maxVolume = (int)data.get("maxvolume");
+                double lat = (double)data.get("lat");
+                double lon = (double)data.get("lon");
 
-            Car car = new Car(uuid, maxLoad, maxVolume, new Coordinate(lat, lon));
+                Car car = new Car(uuid, maxLoad, maxVolume, new Coordinate(lat, lon));
 
-            // 两次setState: 第一次将上一状态set为currState，第二次set会自动将其转移至prevState
-            car.setState(CarState.AVAILABLE);
-            car.setState(CarState.AVAILABLE);
-            car.setLoad(0);
-            car.setVolume(0);
+                // 两次setState: 第一次将上一状态set为currState，第二次set会自动将其转移至prevState
+                car.setState(CarState.AVAILABLE);
+                car.setState(CarState.AVAILABLE);
+                car.setLoad(0);
+                car.setVolume(0);
 
-            carList.put(uuid, car);
+                carMap.put(uuid, car);
+            }
         }
     }
+
+    public static void onStop() { DBManager.saveCarMap(carMap); }
 
     /**
      * 生成随机方位点

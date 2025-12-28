@@ -11,8 +11,6 @@ public abstract class Poi
     protected final Coordinate position;
     protected final int maxStock;
 
-    protected static double stockAlterSpeed;
-
     protected double stock;
 
     public Poi(String uuid, String name, ProductType productType, Coordinate position, int maxStock)
@@ -30,8 +28,6 @@ public abstract class Poi
     public String getUUID() { return uuid; }
     public ProductType getProductType() { return productType; }
     public Coordinate getPosition() { return position; }
-
-    public static void setStockAlterSpeed(int speed) { stockAlterSpeed = speed / 100.0; }
 
     public void setStock(double stock) { this.stock = stock; }
 }

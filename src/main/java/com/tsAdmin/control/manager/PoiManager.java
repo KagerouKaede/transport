@@ -24,8 +24,11 @@ public class PoiManager
     {
         poiList.clear();
 
-        Poi.setStockAlterSpeed(ConfigLoader.getInt("Poi.stock_alter_speed"));
+        ResourcePlant.setStockGrowthRate(ConfigLoader.getInt("ResourcePlant.stock_growth_rate"));
         ProcessPlant.setProcessingLoss(ConfigLoader.getInt("ProcessingPlant.processing_loss"));
+        ProcessPlant.setProcessingSpeed(ConfigLoader.getInt("ProcessPlant.processing_speed"));
+        Purchaser.setPurchaseThreshold(ConfigLoader.getInt("Purchaser.purchase_threshold"));
+        Market.setSalesRate(ConfigLoader.getInt("Market.sales_rate"));
 
         List<Map<String, Object>> dataList = DBManager.getPoiList();
 
@@ -80,23 +83,26 @@ public class PoiManager
         }
     }
 
+    public static void onStop() { DBManager.savePoiStock(poiList); }
+
     /** 更新所有兴趣点，每周期调用 */
     public static void update()
     {
         try
         {
+            DemandManager.resetDemandThisCycle();
+
             // 操作量不大，使用同步操作更简单
             for (Poi poi : poiList.values())
             {
                 poi.update();
             }
 
-            logger.trace("POI updating completed.");
+            logger.trace("POI updating completed");
         }
         catch (Exception e)
         {
             logger.error("Failed to update all POIs", e);
         }
-
     }
 }

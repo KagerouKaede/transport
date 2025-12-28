@@ -12,6 +12,7 @@ import com.jfinal.plugin.activerecord.Db;
 import com.tsAdmin.common.ConfigLoader;
 import com.tsAdmin.model.Car;
 import com.tsAdmin.model.Demand;
+import com.tsAdmin.model.poi.Poi;
 
 public class DBManager
 {
@@ -79,7 +80,7 @@ public class DBManager
                 }
             }
 
-            logger.debug("Got POI list({} total) form SQL", poiList.size());
+            logger.debug("Got POI list from SQL (total {} records)", poiList.size());
             return poiList;
         }
         catch (Exception e)
@@ -101,8 +102,8 @@ public class DBManager
         try
         {
             List<Map<String, String>> demandList = new ArrayList<>();
-            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand";
-            List<Record> rawData = Db.find(sql);
+            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand WHERE preset_UUID = ?";
+            List<Record> rawData = Db.find(sql, ConfigLoader.getConfigUUID());
             
             if (rawData != null && !rawData.isEmpty())
             {
@@ -120,7 +121,7 @@ public class DBManager
                 }
             }
 
-            logger.debug("Got demand list({} total) from SQL", demandList.size());
+            logger.debug("Got demand list from SQL (total {} records)", demandList.size());
             return demandList;
         }
         catch (Exception e)
@@ -154,7 +155,7 @@ public class DBManager
                 }
             }
 
-            logger.debug("Got car list({} total) from SQL", carList.size());
+            logger.debug("Got car map from SQL (total {} records)", carList.size());
             return carList;
         }
         catch (Exception e)
@@ -184,7 +185,7 @@ public class DBManager
                 }
             }
 
-            logger.debug("Got preset list({} total) from SQL", presetList.size());
+            logger.info("Got preset list from SQL (total {} records)", presetList.size());
             return presetList;
         }
         catch (Exception e)
@@ -206,39 +207,126 @@ public class DBManager
                 String content = record.getStr("content");
                 int length = content != null ? content.length() : 0;
 
-                logger.debug("Got preset(UUID:{}) from SQL, content length: {}", uuid, length);
+                logger.info("Got preset(UUID: {}) from SQL, content length: {}", uuid, length);
                 return content;
             }
             else
             {
-                logger.warn("Preset(UUID:{}) not found, null returned", uuid);
+                logger.warn("Preset(UUID: {}) not found, null returned", uuid);
                 return null;
             }
         }
         catch (Exception e)
         {
-            logger.error("Failed to get preset(UUID:{}) from SQL", uuid, e);
+            logger.error("Failed to get preset(UUID: {}) from SQL", uuid, e);
             return null;
         }
     }
 
-    /**
-     * 保存订单到数据库
-     * @param demand 要保存的订单
-     * @return 此次保存成功与否
-     */
-    public static boolean saveDemand(Demand demand)
+    public static int saveDemandMap(Map<String, Demand> demandMap)
     {
-        Record demandRecord = new Record();
-        demandRecord.set("UUID", demand.getUUID())
-                    .set("origin_lat", demand.getOrigin().lat)
-                    .set("origin_lon", demand.getOrigin().lon)
-                    .set("destination_lat",demand.getDestination().lat)
-                    .set("destination_lon", demand.getDestination().lon)
-                    .set("type", demand.getType().name())
-                    .set("quantity",demand.getQuantity())
-                    .set("volume", demand.getVolume());
-        return Db.save("demand", demandRecord);
+        try
+        {
+            List<String> uuidInDB = new ArrayList<>();
+            String selectSql = "SELECT UUID FROM demand WHERE preset_UUID = ?";
+            for (Record record : Db.find(selectSql, ConfigLoader.getConfigUUID()))
+            {
+                uuidInDB.add(record.getStr("UUID"));
+            }
+
+            int addLine = 0;
+            for (String uuid : demandMap.keySet())
+            {
+                if (!uuidInDB.contains(uuid))
+                {
+                    // 数据库中不存在的新订单，存入数据库
+                    Demand demand = demandMap.get(uuid);
+                    Record demandRecord = new Record();
+                    demandRecord.set("UUID", demand.getUUID())
+                                .set("preset_UUID", ConfigLoader.getConfigUUID())
+                                .set("type", demand.getType().name())
+                                .set("quantity",demand.getQuantity())
+                                .set("volume", demand.getVolume())
+                                .set("origin_UUID", demand.getOriginUuid())
+                                .set("destination_UUID",demand.getDestinationUuid());
+                    addLine += Db.save("demand", demandRecord) ? 1 : 0;
+                }
+                else
+                {
+                    // 数据库中已有的历史订单，在数据库中保留，从 uuidInDB 列表中移除
+                    uuidInDB.remove(uuid);
+                }
+            }
+
+            // 删除 uuidInDB 列表中剩余订单，即已完成订单
+            int delLine = 0;
+            String delSql = "DELETE FROM demand WHERE UUID = ?";
+            for (String uuid : uuidInDB)
+            {
+                delLine += Db.delete(delSql, uuid);
+            }
+
+            logger.info("Demand list saved to SQL (inserted {} records, deleted {} records, total {} records)",
+                        addLine, delLine, addLine + delLine);
+            return addLine + delLine;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save demand map to SQL", e);
+            return -1;
+        }
+    }
+
+    public static int saveCarMap(Map<String, Car> carMap)
+    {
+        try
+        {
+            int line = 0;
+            if (getCount("car") > 0)
+            {
+                // TODO: 数据库中有数据记录，Db.update
+                line += 0;
+            }
+            else
+            {
+                // TODO: 数据库中无数据记录，Db.save
+                line += 0;
+            }
+
+            logger.info("Car map saved to SQL (total {} records)", line);
+            return line;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save car map to SQL", e);
+            return -1;
+        }
+    }
+
+    public static int savePoiStock(Map<String, Poi> PoiMap)
+    {
+        try
+        {
+            int line = 0;
+            if (getCount("poi_stock") > 0)
+            {
+                // TODO: 数据库中有数据记录，Db.update
+                line += 0;
+            }
+            else
+            {
+                // TODO: 数据库中无数据记录，Db.save
+                line += 0;
+            }
+
+            logger.info("POI stock saved to SQL (total {} records)", line);
+            return line;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save POI stock to SQL", e);
+            return -1;
+        }
     }
 
     /**
@@ -247,6 +335,7 @@ public class DBManager
      * @param car 要保存的车辆
      * @return 此次保存成功与否
      */
+    @Deprecated
     public static boolean saveCar(Car car)
     {
         Record carRecord = new Record();
@@ -284,12 +373,12 @@ public class DBManager
                 success = Db.update(updateSql, content, uuid) > 0;
             }
 
-            logger.debug("Saved preset(UUID:{}), success status: {}", uuid, success);
+            logger.debug("Saved preset(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to save preset(UUID:{})", uuid, e);
+            logger.error("Failed to save preset(UUID: {})", uuid, e);
             return false;
         }
     }
@@ -302,12 +391,12 @@ public class DBManager
             String sql = "DELETE FROM preset WHERE UUID = ?";
             success = Db.delete(sql, uuid) > 0;
 
-            logger.debug("Removed preset(UUID:{}), success status: {}", uuid, success);
+            logger.debug("Removed preset(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to remove preset(UUID:{})", uuid, e);
+            logger.error("Failed to remove preset(UUID: {})", uuid, e);
             return false;
         }
     }
@@ -362,7 +451,7 @@ public class DBManager
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            logger.error("Failed to remove demand from database", e);
             return false;
         }
     }

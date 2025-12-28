@@ -35,7 +35,7 @@ public abstract class BaseScheduler
     public void syncAssignmentsToCars(List<Assignment> assignments) {
         for (Assignment assignment : assignments) {
             Car car = assignment.getCar();
-            CarManager.carList.get(car.getUUID()).setNodeList(assignment.getNodeList());
+            CarManager.carMap.get(car.getUUID()).setNodeList(assignment.getNodeList());
         }
     }
 

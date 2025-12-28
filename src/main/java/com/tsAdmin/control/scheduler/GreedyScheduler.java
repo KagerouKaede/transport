@@ -36,7 +36,7 @@ public class GreedyScheduler extends BaseScheduler
         
         // ========== 第一步：筛选未分配完成的demand ==========
         List<Demand> newDemands = new ArrayList<>();
-        for (Demand demand : DemandManager.demandList.values())
+        for (Demand demand : DemandManager.getList())
         {
             if (!demand.isAssigned()) {
                 newDemands.add(demand);
@@ -50,7 +50,7 @@ public class GreedyScheduler extends BaseScheduler
         
         // ========== 第二步：深拷贝车辆 ==========
         List<Car> carsCopy = new ArrayList<>();
-        for (Car car : CarManager.carList.values())
+        for (Car car : CarManager.carMap.values())
         {
             carsCopy.add(new Car(car)); // 深拷贝车辆
         }
@@ -59,7 +59,7 @@ public class GreedyScheduler extends BaseScheduler
         MultiObjectiveEvaluator evaluator = new MultiObjectiveEvaluator();
 
         // ========== 第三步：贪心分配新的demand ==========
-        for (Demand demand : newDemands) 
+        for (Demand demand : newDemands)
         {
             if (demand.isAssigned()) continue; // 安全检查
 

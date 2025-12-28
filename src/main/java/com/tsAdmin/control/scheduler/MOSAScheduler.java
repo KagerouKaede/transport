@@ -195,7 +195,7 @@ public class MOSAScheduler extends BaseScheduler
 
         // ========== 第七步：同步结果 ==========
         // 将最终分配方案同步到车辆对象中
-        syncAssignmentsToCars(finalAssignments, CarManager.carList.values());
+        syncAssignmentsToCars(finalAssignments, CarManager.carMap.values());
          // ========== 第八步：更新 CarStat！==========
        updateCarStats(finalAssignments); // ← 新增方法
 
@@ -384,13 +384,13 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
     private List<Assignment> generateRandomSolution()
     {
         List<Assignment> assignments = new ArrayList<>();
-        for (Car car : CarManager.carList.values())
+        for (Car car : CarManager.carMap.values())
         {
             assignments.add(new Assignment(car));
         }
 
         List<Demand> pendingDemands = new ArrayList<>();
-        for (Demand demand : DemandManager.demandList.values())
+        for (Demand demand : DemandManager.getList())
         {
             if (!demand.isAssigned())
             {
@@ -754,19 +754,16 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
         return normalizer;
     }
 
-    /**
-     * 获取多目标评估器（用于外部访问）
-     */
     public MultiObjectiveEvaluator getEvaluator()
     {
         return evaluator;
     }
 
-
+    
     // ===== 新增方法：更新 CarStat =====
 public void updateCarStats(List<Assignment> assignments) {
     for (Assignment assignment : assignments) {
-        Car car = CarManager.carList.get(assignment.getCar().getUUID());
+        Car car = CarManager.carMap.get(assignment.getCar().getUUID());
         if (car == null) continue;
 
         ObjectiveVector vec = evaluator.evaluateAll(assignment);
