@@ -4,8 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tsAdmin.control.DBManager;
 
@@ -38,7 +38,7 @@ public final class ConfigLoader
             // 当前配置已是要使用的配置且并不强制重加载，跳过加载过程
             if (!reload && configUUID == uuid)
             {
-                logger.trace("Config(UUID:{}) applied with no change", uuid);
+                logger.trace("Configuration(UUID: {}) applied with no change", uuid);
                 return true;
             }
 
@@ -51,12 +51,12 @@ public final class ConfigLoader
                 throw new NoSuchFieldException("No \"configs\" node found in config(UUID:" + configUUID + ")!");
             }
 
-            logger.trace("Config(UUID:{}) applied successfully", uuid);
+            logger.trace("Configuration(UUID: {}) applied successfully", uuid);
             return true;
         }
         catch (NoSuchFieldException e)
         {
-            logger.error("Failed to load config(UUID:{})", uuid, e);
+            logger.error("Failed to load configuration(UUID: {})", uuid, e);
             return false;
         }
     }
@@ -83,7 +83,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to load full json of config(UUID:{})", configUUID, e);
+            logger.error("Failed to load full json of configuration(UUID: {})", configUUID, e);
             return null;
         }
     }
@@ -99,14 +99,14 @@ public final class ConfigLoader
         JsonNode configItem = configData.get(key);
         if (configItem == null || configItem.isNull())
         {
-            logger.warn("Key [{}] not found in config(UUID:{}), default value returned", key, configUUID);
+            logger.warn("Key [{}] not found in configuration(UUID: {}), default value returned", key, configUUID);
             return null;
         }
 
         JsonNode valueNode = configItem.get("value");
         if (valueNode == null || valueNode.isNull())
         {
-            logger.warn("Value not found for key [{}] in config(UUID:{}), default value returned", key, configUUID);
+            logger.warn("Value not found for key [{}] in configuration(UUID: {}), default value returned", key, configUUID);
             return null;
         }
 
@@ -125,7 +125,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to get value for key [{}] in config(UUID:{}), default value [{}] returned", key, configUUID, defaultValue);
+            logger.error("Failed to get value for key [{}] in configuration(UUID: {}), default value [{}] returned", key, configUUID, defaultValue);
             return defaultValue;
         }
     }
@@ -140,7 +140,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to get value for key [{}] in config(UUID:{}), default value [{}] returned", key, configUUID, defaultValue);
+            logger.error("Failed to get value for key [{}] in configuration(UUID: {}), default value [{}] returned", key, configUUID, defaultValue);
             return defaultValue;
         }
     }
@@ -155,7 +155,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to get value for key [{}] in config(UUID:{}), default value [{}] returned", key, configUUID, defaultValue);
+            logger.error("Failed to get value for key [{}] in configuration(UUID: {}), default value [{}] returned", key, configUUID, defaultValue);
             return defaultValue;
         }
     }
@@ -170,7 +170,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to get value for key [{}] in config(UUID:{}), default value [{}] returned", key, configUUID, defaultValue);
+            logger.error("Failed to get value for key [{}] in configuration(UUID: {}), default value [{}] returned", key, configUUID, defaultValue);
             return defaultValue;
         }
     }
@@ -185,7 +185,7 @@ public final class ConfigLoader
         }
         catch (Exception e)
         {
-            logger.error("Failed to get value for key [{}] in config(UUID:{}), default value [{}] returned", key, configUUID, defaultValue);
+            logger.error("Failed to get value for key [{}] in configuration(UUID: {}), default value [{}] returned", key, configUUID, defaultValue);
             return defaultValue;
         }
     }

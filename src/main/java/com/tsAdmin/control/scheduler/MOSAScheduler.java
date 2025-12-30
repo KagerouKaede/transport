@@ -1,7 +1,14 @@
-package com.tsAdmin.control.scheduler;  // 包声明：调度器控制包
+package com.tsAdmin.control.scheduler;
 
-import java.util.*;  // 导入Java工具类（List, ArrayList, Map, HashMap, Random等）
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+<<<<<<< HEAD
 import com.tsAdmin.common.PathNode;  // 导入路径节点类
 import com.tsAdmin.common.algorithm.multiobjective.*;  // 导入多目标优化算法包的所有类
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;  // 导入多目标向量类
@@ -9,6 +16,17 @@ import com.tsAdmin.control.scheduler.GreedyScheduler;
 // 导入分配方案模型类
 import com.tsAdmin.model.*; 
 import com.tsAdmin.control.manager.*;
+=======
+import com.tsAdmin.common.PathNode;
+import com.tsAdmin.common.algorithm.multiobjective.*;
+import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;
+import com.tsAdmin.model.Assignment;
+import com.tsAdmin.model.*; 
+import com.tsAdmin.control.manager.*; 
+import com.tsAdmin.common.algorithm.multiobjective.DynamicNormalizer;
+import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator;
+import com.tsAdmin.common.algorithm.multiobjective.ProbabilityAcceptance;
+>>>>>>> cc6fb66e7e87965fc8198969807bd1e2b3cec17f
 
 /**
  * 多目标模拟退火调度器（MOSA - Multi-Objective Simulated Annealing）
@@ -45,7 +63,6 @@ public class MOSAScheduler extends BaseScheduler
      * 概率接受机制：用于决定是否接受新解
      */
     private final ProbabilityAcceptance acceptance;
-    private final Random random = new Random();
     private static final int MAX_NEIGHBOR_ATTEMPTS = 20;
     
     // ========== MOSA算法参数 ==========
@@ -182,7 +199,7 @@ public class MOSAScheduler extends BaseScheduler
 
         // ========== 第七步：同步结果 ==========
         // 将最终分配方案同步到车辆对象中
-        syncAssignmentsToCars(finalAssignments, CarManager.carList.values());
+        syncAssignmentsToCars(finalAssignments, CarManager.carMap.values());
          // ========== 第八步：更新 CarStat！==========
        updateCarStats(finalAssignments); // ← 新增方法
 
@@ -371,13 +388,13 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
     private List<Assignment> generateRandomSolution()
     {
         List<Assignment> assignments = new ArrayList<>();
-        for (Car car : CarManager.carList.values())
+        for (Car car : CarManager.carMap.values())
         {
             assignments.add(new Assignment(car));
         }
 
         List<Demand> pendingDemands = new ArrayList<>();
-        for (Demand demand : DemandManager.demandList)
+        for (Demand demand : DemandManager.getList())
         {
             if (!demand.isAssigned())
             {
@@ -741,19 +758,16 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
         return normalizer;
     }
 
-    /**
-     * 获取多目标评估器（用于外部访问）
-     */
     public MultiObjectiveEvaluator getEvaluator()
     {
         return evaluator;
     }
 
-
+    
     // ===== 新增方法：更新 CarStat =====
 public void updateCarStats(List<Assignment> assignments) {
     for (Assignment assignment : assignments) {
-        Car car = CarManager.carList.get(assignment.getCar().getUUID());
+        Car car = CarManager.carMap.get(assignment.getCar().getUUID());
         if (car == null) continue;
 
         ObjectiveVector vec = evaluator.evaluateAll(assignment);

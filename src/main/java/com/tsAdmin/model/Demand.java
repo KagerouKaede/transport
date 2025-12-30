@@ -24,16 +24,18 @@ public class Demand
 
     // Setter
     public void setQuantity(int quantity) { this.product.setQuantity(quantity); }
-    public void setVolume(int volume) { this.product.setVolume(volume); }
+    public void setVolume(double volume) { this.product.setVolume(volume); }
     public void setAssigned() { this.isAssigned = true; }
 
     // Getter
     public String getUUID() { return uuid; }
     public Coordinate getOrigin() { return origin.getPosition(); }
+    public String getOriginUuid() { return origin.getUUID(); }
     public Coordinate getDestination() { return destination.getPosition(); }
+    public String getDestinationUuid() { return destination.getUUID(); }
     public ProductType getType() { return product.getType(); }
     public int getQuantity() { return product.getQuantity(); }
-    public int getVolume() { return product.getVolume(); }
+    public double getVolume() { return product.getVolume(); }
     public boolean isAssigned() { return isAssigned; }
 
     public int routeLength()

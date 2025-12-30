@@ -1,14 +1,10 @@
 package com.tsAdmin.control.scheduler;
 
 import java.util.*;
-import com.tsAdmin.common.PathNode;
 
+import com.tsAdmin.common.PathNode;
 import com.tsAdmin.model.*;
 import com.tsAdmin.control.manager.*;
-
-
-
-
 
 
 /**
@@ -19,14 +15,13 @@ import com.tsAdmin.control.manager.*;
  * - 所有调度器（单目标/多目标）都继承此类
  * - 方法设为 protected 供子类使用，public 供外部调用
  */
-public abstract class BaseScheduler implements Scheduler {
-    
+public abstract class BaseScheduler
+{
     // ========== 共享组件 ==========
 
     protected final Random random = new Random();
 
     // ========== 接口方法（必须由子类实现） ==========
-    @Override
     public abstract List<Assignment> schedule();
 
     // ========== 公共工具方法（供外部调用） ==========
@@ -40,7 +35,7 @@ public abstract class BaseScheduler implements Scheduler {
     public void syncAssignmentsToCars(List<Assignment> assignments) {
         for (Assignment assignment : assignments) {
             Car car = assignment.getCar();
-            CarManager.carList.get(car.getUUID()).setNodeList(assignment.getNodeList());
+            CarManager.carMap.get(car.getUUID()).setNodeList(assignment.getNodeList());
         }
     }
 

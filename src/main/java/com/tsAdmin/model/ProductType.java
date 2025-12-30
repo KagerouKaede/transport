@@ -3,6 +3,8 @@ package com.tsAdmin.model;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.tsAdmin.control.Main;
+
 public enum ProductType
 {
     /** 木材 */ WOOD(0),
@@ -23,8 +25,23 @@ public enum ProductType
     ProductType(int index) { this.index = index; }
 
     public String getName() { return (String)params.get("name")[index]; }
-    public int getMinQuantity() { return (int)params.get("minQuantity")[index]; }
+
     public int getMaxQuantity() { return (int)params.get("maxQuantity")[index]; }
-    public int getMinDensity() { return (int)params.get("minDensity")[index]; }
-    public int getMaxDensity() { return (int)params.get("maxDensity")[index]; }
+
+    public int getRandQuantity()
+    {
+        int minQuantity = (int)params.get("minQuantity")[index];
+        int maxQuantity = (int)params.get("maxQuantity")[index];
+
+        return Main.RANDOM.nextInt(minQuantity, maxQuantity + 1);
+    }
+
+    public double getRandVolume(int quantity)
+    {
+        int minDensity = (int)params.get("minDensity")[index];
+        int maxDensity = (int)params.get("maxDensity")[index];
+
+        int density = Main.RANDOM.nextInt(minDensity, maxDensity + 1);
+        return quantity * 1000.0 / density;
+    }
 }

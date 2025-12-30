@@ -6,7 +6,7 @@ import com.jfinal.render.ViewType;
 import com.jfinal.template.Engine;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
 import com.jfinal.kit.PropKit;
-import com.tsAdmin.control.PresetController;
+import com.tsAdmin.control.SandboxController;
 import com.tsAdmin.control.DataController;
 import com.tsAdmin.control.IndexController;
 
@@ -29,7 +29,7 @@ public class MainConfig extends JFinalConfig
     {
         me.add("/", IndexController.class);
         me.add("/data", DataController.class);
-        me.add("/conf", PresetController.class);
+        me.add("/conf", SandboxController.class);
     }
 
     /** 配置插件 */

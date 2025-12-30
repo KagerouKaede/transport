@@ -3,8 +3,8 @@ package com.tsAdmin.control;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.jfinal.core.Controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,14 +15,46 @@ import com.tsAdmin.common.ConfigLoader;
  * 配置控制器
  * 主要处理前端对参数配置的更新
  */
-public class PresetController extends Controller
+public class SandboxController extends Controller
 {
-    private static final Logger logger = LogManager.getLogger(PresetController.class);
+    private static final Logger logger = LogManager.getLogger(SandboxController.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private void reply(boolean success, String message)
     {
         renderJson(Map.of("success", success, "message", message));
+    }
+
+    /**
+     * 按照已应用的预设开始模拟
+     * <p>返回数据格式：{"success":{@code boolean}, "message":{@code String}}
+     */
+    public void startSimulation()
+    {
+        try
+        {
+            Main.start();
+            reply(true, "Simulation started successfully");
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to start simulation", e);
+            reply(false, "Failed to start simulation, please check log to learn more");
+        }
+    }
+
+    public void stopSimulation()
+    {
+        try
+        {
+            Main.stop();
+            reply(true, "Simulation stopped successfully");
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to stop simulation", e);
+            reply(false, "Failed to stop simulation, please check log to learn more");
+        }
     }
 
     /**
@@ -68,25 +100,8 @@ public class PresetController extends Controller
         }
         else
         {
+            logger.warn("Failed to apply preset(UUID: {})", uuid);
             reply(false, "Failed to apply preset(UUID:" + uuid + "), please check log to learn more");
-        }
-    }
-
-    /**
-     * 按照已应用的预设开始模拟
-     * <p>返回数据格式：{"success":{@code boolean}, "message":{@code String}}
-     */
-    public void startSimulation()
-    {
-        try
-        {
-            Main.start();
-            reply(true, "Simulation started successfully");
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to start simulation", e);
-            reply(false, "Failed to start simulation, please check log to learn more");
         }
     }
 
@@ -110,7 +125,7 @@ public class PresetController extends Controller
             String content = getPara("content");
             if (content == null || content.isEmpty())
             {
-                logger.warn("Content of preset(UUID:{}) is null or empty", uuid);
+                logger.warn("Content of preset(UUID: {}) is null or empty", uuid);
             }
 
             boolean success = DBManager.savePreset(isNew, uuid, content);
@@ -125,7 +140,7 @@ public class PresetController extends Controller
         }
         catch (Exception e)
         {
-            logger.error("Failed to save preset(UUID:{})", uuid, e);
+            logger.error("Failed to save preset(UUID: {})", uuid, e);
             reply(false, "Failed to save preset, please check log to learn more");
         }
     }
@@ -139,7 +154,7 @@ public class PresetController extends Controller
         String uuid = getPara("UUID");
         if (uuid == null || uuid.isEmpty())
         {
-            logger.error("UUID of the preset to be removed is null or empty", new RuntimeException());
+            logger.error("UUID of the preset to be removed is null or empty");
             uuid = "Unknown";
         }
 

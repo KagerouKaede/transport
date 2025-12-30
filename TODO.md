@@ -25,27 +25,27 @@
 
   > 在初始化时将需要的兴趣点加载至内存，形式应类似于`Car`或`Demand`类
 
-- [ ] 实现厂商类的更新逻辑
+- [x] 实现厂商类的更新逻辑
 
   > 厂商数据应定时更新，且更新全过程应由后端独立完成
 
-- [ ] 为加工厂`Processor`添加新属性`stock, upBound, lowBound`
+- [x] 为加工厂`Processor`添加新属性`stock, upBound, lowBound`
 
   > 加工厂在接收订单后按照一定折损率增加库存`stock: int`，并且拥有上阈值`upBound: int`与下阈值`lowBound: int`，作用详见[库存定需](#stock-usage)
 
   > 注：上下阈值不是上下限，不能抛弃超阈部分的值
 
-- [ ] 增加新类：市场类 `Market`
+- [x] 增加新类：市场类 `Market`
 
   > 市场对应现实中的家具城、五金店等，可以生成货运订单`Demand`，逻辑详见[市场下单](#market-demand)
   >
   > 市场类为兴趣点类的子类
 
-- [ ] 订单由随机生成转为厂商按需生成
+- [x] 订单由随机生成转为厂商按需生成
 
   > 具体表现为：
   >
-  > - [ ] <span id="stock-usage">加工厂在库存低于下阈值时随机寻找相同产品种类`ProductType`的生产厂`Processor`，生成货运订单，直至库存达到上阈值</span>
+  > - [x] <span id="stock-usage">加工厂在库存低于下阈值时随机寻找相同产品种类`ProductType`的生产厂`Processor`，生成货运订单，直至库存达到上阈值</span>
   > - [ ] 加工厂有概率寻找其他有库存的同类加工厂而非生产厂，生成货运订单
   > - [ ] <span id="market-demand">市场每个周期有概率购买库存足够的加工厂产品，生成货运订单</span>
   

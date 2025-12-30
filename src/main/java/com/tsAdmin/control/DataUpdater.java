@@ -6,29 +6,46 @@ import com.tsAdmin.control.scheduler.*;
 
 public class DataUpdater implements Runnable
 {
-    private static MOSAScheduler mosaScheduler;
+    private volatile boolean running = true;
+    private static int UPDATE_INTERVAL;
 
-    public DataUpdater() {
-        mosaScheduler = new MOSAScheduler(); // 直接创建
-    }
+    private static MOSAScheduler scheduler = new MOSAScheduler();
+
+    public static MOSAScheduler getScheduler() { return scheduler; }
+
+    public void stop() { running = false; }
 
     @Override
-    public void run() {
-        final long UPDATE_INTERVAL = ConfigLoader.getInt("Main.update_interval", 5) * 1000;
-        boolean isRunning = true;
-        long lastUpdate = System.currentTimeMillis();
+    public void run()
+    {
+        // s => ms
+        UPDATE_INTERVAL = ConfigLoader.getInt("Main.update_interval", 5) * 1000;
 
-        while (isRunning) {
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastUpdate > UPDATE_INTERVAL) {
-                lastUpdate = currentTime;
-                PoiManager.update();
-                mosaScheduler.schedule(); // 直接调用静态字段
+        while (running)
+        {
+            long start = System.currentTimeMillis();
+
+            // 这里开始数据更新逻辑
+
+            PoiManager.update();
+            scheduler.schedule();
+
+            // 这里结束数据更新逻辑
+
+            long cost = System.currentTimeMillis() - start;
+            long sleep = UPDATE_INTERVAL - cost;
+            if (sleep > 0)
+            {
+                try
+                {
+                    Thread.sleep(sleep);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
-    }
-
-    public static MOSAScheduler getMosaScheduler() {
-        return mosaScheduler;
     }
 }

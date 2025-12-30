@@ -2,7 +2,6 @@ package com.tsAdmin.model;
 
 /**
  * 车辆统计参数类，用于存储每辆车的运营统计数据。
- * 后续可逐步添加更多参数。
  */
 public class CarStatistics
 {
@@ -11,7 +10,6 @@ public class CarStatistics
     private double wastedLoad;
     private double totalWeight;
     private double carbonEmission;
-    // ... 其他字段
 
     // ===== 新增 setter =====
     public void setWaitingTime(double waitingTime) {

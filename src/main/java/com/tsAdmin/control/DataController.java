@@ -19,7 +19,6 @@ import com.tsAdmin.control.manager.CarManager;
 import com.tsAdmin.model.Car;
 import com.tsAdmin.model.CarStatistics;
 
-
 /**
  * 数据控制器
  * 主要处理前端发出的请求，返回JSON数据
@@ -29,13 +28,13 @@ public class DataController extends Controller
     private static final Logger logger = LogManager.getLogger(DataController.class);
 
     /**
-     * 获取所有POI数据
-     * <p>返回数据格式：[{"UUID":{@code String}, "name":{@code String}, "lat":{@code Double}, "lon":{@code Double}}, {...}, ...]
+     * 获取所有兴趣点数据
+     * <p>返回数据格式：[{"UUID":{@code String},"class":{@code String},"type":{@code String}, "name":{@code String}, "lat":{@code Double}, "lon":{@code Double}}, {...}, ...]
+     * 其中 {@code class} 值可能为 {@code ResourcePlant, ProcessPlant, Market} ；{@code type} 值可能为 {@code "WOOD", "STEEL", "PHARMA"}
      */
     public void getPoiData()
     {
-        String type = getPara("type");
-        List<Map<String, Object>> dataList = DBManager.getPoiList(type);
+        List<Map<String, Object>> dataList = DBManager.getPoiList();
         renderJson(JsonKit.toJson(dataList));
     }
 
@@ -48,6 +47,7 @@ public class DataController extends Controller
         List<Map<String, Object>> posList = DBManager.getCarList();
         renderJson(JsonKit.toJson(posList));
     }
+
     /**
      * 接收前端目标选择信号，从 Pareto 前沿中选择最优解
      */
@@ -65,7 +65,7 @@ public class DataController extends Controller
         }
 
         // 2. 获取 MOSAScheduler 实例
-        MOSAScheduler mosa = DataUpdater.getMosaScheduler();
+        MOSAScheduler mosa = DataUpdater.getScheduler();
         if (mosa == null) {
             renderJson(Map.of("code", 500, "msg", "MOSA 调度器未运行"));
             return;
@@ -79,12 +79,13 @@ public class DataController extends Controller
         }
 
         // 4. 同步新解到车辆，并更新 CarStatistics
-        mosa.syncAssignmentsToCars(bestSolution, CarManager.carList.values());
+        mosa.syncAssignmentsToCars(bestSolution, CarManager.carMap.values());
         mosa.updateCarStats(bestSolution); // 你已实现的方法
 
         // 5. 返回成功
         renderJson(Map.of("code", 200, "msg", "Pareto 解已更新"));
     }
+
     /**
      * 获取仪表盘数据
      * TODO: 修改仪表盘数据获取
@@ -96,7 +97,7 @@ public class DataController extends Controller
 
         try
         {
-            for(Car car : CarManager.carList.values())
+            for(Car car : CarManager.carMap.values())
             {
                 CarStatistics statistics = car.getStatistics();
                 Map<String, String> data = new HashMap<>();
@@ -139,7 +140,7 @@ public class DataController extends Controller
     public void getDestination()
     {
         String uuid = getPara("UUID");
-        Car car = CarManager.carList.get(uuid);
+        Car car = CarManager.carMap.get(uuid);
         Map<String, Double> dest = null;
 
         // 车辆计时器滴答一次并在计时器归零时进行车辆状态转换

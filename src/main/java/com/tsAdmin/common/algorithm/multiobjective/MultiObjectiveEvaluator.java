@@ -16,8 +16,8 @@ import com.tsAdmin.model.Car;  // 导入车辆模型类
  * 4. 全局车辆总运输达成吨位
  * 5. 全局车辆总碳排放量
  */
-public class MultiObjectiveEvaluator {
-    
+public class MultiObjectiveEvaluator
+{
     /**
      * 目标类型枚举：为每个目标标记"是否以最小化为目标"
      * 若 isMinimize=false，则表示这是一个最大化指标（例如运量），在比较/归一化时会自动取相反数

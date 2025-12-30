@@ -1,9 +1,12 @@
 package com.tsAdmin.control.manager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import com.tsAdmin.common.ConfigLoader;
 import com.tsAdmin.control.DBManager;
 import com.tsAdmin.model.Demand;
 import com.tsAdmin.model.Product;
@@ -12,49 +15,60 @@ import com.tsAdmin.model.poi.*;
 
 public class DemandManager
 {
-    public static List<Demand> demandList = new ArrayList<>();
+    private static Map<String, Demand> demandMap = new HashMap<>();
+    private static int MAX_DEMAND_PER_CYCLE = 0;
+    private static int demandThisCycle = 0;
 
     public static void init()
     {
-        demandList.clear();
+        demandMap.clear();
 
-        if (!DBManager.isTableEmpty("demand"))
+        MAX_DEMAND_PER_CYCLE = ConfigLoader.getInt("DemandManager.max_demand_per_cycle");
+
+        if (DBManager.getCount("demand") <= 0) return;
+
+        List<Map<String, String>> dataList = DBManager.getDemandList();
+        for (Map<String, String> data : dataList)
         {
-            List<Map<String, String>> records = DBManager.getDemandList();
-            for (Map<String, String> record : records)
-            {
-                String uuid = record.get("UUID");
-                int quantity = Integer.parseInt(record.get("quantity"));
-                int volume = Integer.parseInt(record.get("volume"));
-                ProductType type = ProductType.valueOf(record.get("type"));
-                Poi origin = PoiManager.poiList.get(record.get("origin_UUID"));
-                Poi destination = PoiManager.poiList.get(record.get("destination_UUID"));
+            String uuid = data.get("UUID");
+            Poi origin = PoiManager.poiList.get(data.get("origin_UUID"));
+            Poi destination = PoiManager.poiList.get(data.get("destination_UUID"));
 
-                Product product = new Product(type, quantity, volume);
+            ProductType type = ProductType.valueOf(data.get("type"));
+            int quantity = Integer.parseInt(data.get("quantity"));
+            int volume = Integer.parseInt(data.get("volume"));
+            Product product = new Product(type, quantity, volume);
 
-                Demand demand = new Demand(uuid, origin, destination, product);
-
-                // 添加到 demand 列表
-                demandList.add(demand);
-            }
+            Demand demand = new Demand(uuid, origin, destination, product);
+            demandMap.put(uuid, demand);
         }
     }
 
-    public static void generateDemand(Product product, Poi from, Poi to)
+    public static void onStop() { DBManager.saveDemandMap(demandMap); }
+
+    /**
+     * 生成新的订单并自动将其加入订单表
+     * @param origin 起点，必须是 {@code Dumper} 的实现
+     * @param destination 终点，必须是 {@code Purchaser} 或其子类，兴趣点调用时一般为 {@code this}
+     * @param quantity 需求的质量
+     * @return 生成的订单
+     */
+    public static Demand generateDemand(Poi origin, Poi destination, int quantity)
     {
-        // for (; num > 0; num--)
-        // {
-        //     // 随机生成一个产品
-        //     ProductType type = null;
+        Product product = ((Dumper)origin).packProduct(quantity);
+        String uuid = UUID.randomUUID().toString().replace("-", "");
 
-        //     //根据产品类型选择起终点
-        //     Producer producer = ProducerManager.getRandProducer(type);
-        //     Processor processor = ProcessorManager.getRandProcessor(type);
+        Demand demand = new Demand(uuid, origin, destination, product);
 
-        //     // 生产需求，并把需求存入demandList与数据库当中
-        //     Demand demand = processor.createDemand(type, processor);
-        //     DemandManager.demandList.put(demand.getUUID(), demand);
-        //     DBManager.saveDemand(demand);
-        // }
+        demandThisCycle++;
+        demandMap.put(uuid, demand);
+        return demand;
     }
+
+    public static boolean allowNewDemand() { return MAX_DEMAND_PER_CYCLE > demandThisCycle; }
+    public static void resetDemandThisCycle() { demandThisCycle = 0; }
+
+    /** 获取所有订单组成的列表<p><b>对其的修改不会同步到本类内的列表</b> */
+    public static List<Demand> getList() { return new ArrayList<>(demandMap.values()); }
+    public static void removeDemand(String uuid) { demandMap.remove(uuid); }
 }
