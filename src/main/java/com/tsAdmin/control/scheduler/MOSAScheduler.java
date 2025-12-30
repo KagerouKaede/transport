@@ -8,15 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-<<<<<<< HEAD
-import com.tsAdmin.common.PathNode;  // 导入路径节点类
-import com.tsAdmin.common.algorithm.multiobjective.*;  // 导入多目标优化算法包的所有类
-import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;  // 导入多目标向量类
-import com.tsAdmin.control.scheduler.GreedyScheduler;
-// 导入分配方案模型类
-import com.tsAdmin.model.*; 
-import com.tsAdmin.control.manager.*;
-=======
 import com.tsAdmin.common.PathNode;
 import com.tsAdmin.common.algorithm.multiobjective.*;
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;
@@ -26,8 +17,6 @@ import com.tsAdmin.control.manager.*;
 import com.tsAdmin.common.algorithm.multiobjective.DynamicNormalizer;
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator;
 import com.tsAdmin.common.algorithm.multiobjective.ProbabilityAcceptance;
->>>>>>> cc6fb66e7e87965fc8198969807bd1e2b3cec17f
-
 /**
  * 多目标模拟退火调度器（MOSA - Multi-Objective Simulated Annealing）
  * 整合所有模块，实现完整的MOSA算法流程
