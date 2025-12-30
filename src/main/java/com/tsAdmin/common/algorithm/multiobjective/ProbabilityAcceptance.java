@@ -3,6 +3,7 @@ import java.util.List;  // 导入列表接口
 import java.util.Random;  // 导入随机数生成器
 
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;  // 导入多目标向量类
+import com.tsAdmin.common.algorithm.multiobjective.NonDominatedSet.AddAnalysis;
 
 /**
  * 概率接受机制
@@ -11,7 +12,7 @@ import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.Objec
  * 1. 如果新解支配某些旧解 → 总是接受，并更新前沿
  * 2. 如果新解被某些旧解支配 → 以概率接受（退火机制）
  * 3. 如果新解与所有旧解互不支配 → 总是接受，并加入前沿
- */
+ */ 
 public class ProbabilityAcceptance
 {
     private final Random random;  // 随机数生成器：用于概率接受判断
@@ -94,11 +95,13 @@ public class ProbabilityAcceptance
     public AcceptanceResult calculateMultiObjectiveAcceptance(
             ObjectiveVector newVector,
             NonDominatedSet nonDominatedSet,
-            double temperature)
+            double temperature,
+             AddAnalysis analysis)
     {
-        // 第一步：分析新解与非支配集的关系
-        // 检查新解是否被支配，以及新解是否支配某些旧解
-        NonDominatedSet.AddAnalysis analysis = nonDominatedSet.analyzeAdd(newVector);
+         if (analysis == null) {
+        analysis = nonDominatedSet.analyzeAdd(newVector); // 如果未传入，则自己分析
+    }
+        
 
         // ========== 情况 1：新解支配某些旧解 ========== 
         if (!analysis.getDominated().isEmpty())

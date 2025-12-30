@@ -6,15 +6,9 @@ import com.tsAdmin.common.PathNode;  // 导入路径节点类
 import com.tsAdmin.common.algorithm.multiobjective.*;  // 导入多目标优化算法包的所有类
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;  // 导入多目标向量类
 import com.tsAdmin.control.scheduler.GreedyScheduler;
-import com.tsAdmin.model.Assignment;  // 导入分配方案模型类
+// 导入分配方案模型类
 import com.tsAdmin.model.*; 
-import com.tsAdmin.control.manager.*; 
-
-
-
-import com.tsAdmin.common.algorithm.multiobjective.DynamicNormalizer;
-import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator;
-import com.tsAdmin.common.algorithm.multiobjective.ProbabilityAcceptance;
+import com.tsAdmin.control.manager.*;
 
 /**
  * 多目标模拟退火调度器（MOSA - Multi-Objective Simulated Annealing）
@@ -153,30 +147,24 @@ public class MOSAScheduler extends BaseScheduler
             // 将所有车辆的目标值相加，得到总目标向量
             ObjectiveVector newVector = calculateTotalObjectiveVector(newAssignments);
 
-            // 5.3 判断是否接受新解
-            // 根据新解与非支配集的关系和温度，计算接受概率并决定是否接受
+            // 5.3 分析新解与非支配集的关系
+            NonDominatedSet.AddAnalysis analysis = nonDominatedSet.analyzeAdd(newVector);
+
+            // 5.4 计算接受概率
             ProbabilityAcceptance.AcceptanceResult result = acceptance.calculateMultiObjectiveAcceptance(
-                newVector, nonDominatedSet, temperature);
+                newVector, nonDominatedSet, temperature, analysis);
 
-            // 5.4 如果接受，更新非支配集
-            if (result.isAccepted())
-            {
-                // 将新解添加到非支配集（会自动删除被支配的旧解）
-                NonDominatedSet.AddResult addResult = nonDominatedSet.add(newVector, newAssignments);
-                
-                // 更新归一化范围（动态归一化）
-                // 如果新解成功添加到非支配集，更新归一化范围
-                if (addResult.isAdded())
-                {
-                    updateNormalizer();
-                }
+            // 5.5 如果接受，更新非支配集
+            if (result.isAccepted()) {
+                // 强制添加新解（会自动删除被支配的旧解）
+                nonDominatedSet.forceAdd(newVector, newAssignments);
+                updateNormalizer();
             }
-
-            // 5.5 降温
+            // 5.6降温
             // 按照冷却率降低温度：新温度 = 旧温度 × 冷却率
             temperature *= COOLING_RATE;
 
-            // 5.6 温度扰动机制（防止过早收敛）
+            // 5.7温度扰动机制（防止过早收敛）
             // 每10%的迭代次数，轻微提高温度，增加探索能力
             if (iteration % (MAX_ITERATION_TIME / 10) == 0)
             {
@@ -223,7 +211,7 @@ public class MOSAScheduler extends BaseScheduler
         // 使用整套车辆方案的合计目标向量，避免单车数据支配全局解
         ObjectiveVector vector = calculateTotalObjectiveVector(assignments);
         // 保存深拷贝，保证后续迭代不会污染初始解
-        nonDominatedSet.add(vector, deepCopyAssignments(assignments));
+        nonDominatedSet.forceAdd(vector, deepCopyAssignments(assignments));
     }
 
     /**
