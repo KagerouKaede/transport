@@ -1,5 +1,6 @@
 // key.js is git-ignored
 import { ApiSrc } from "../key.js";
+import EventManager, { EventType, EventSeverity, WeatherType } from './events.js';
 
 const carIconSrc = './resources/CarIcon.png';
 const originIconSrc = './resources/Origin.png';
@@ -24,6 +25,7 @@ const duration = 20; // 每段停留时间（单位：毫秒）
 // const routes = [];
 const POIs = [];//poi点数组
 const cars = [];//车辆数组
+let eventManager;
 
 let isCarUpdating = false;
 
@@ -32,10 +34,8 @@ let driving;//driving对象
 let carIcon;
 
 
-async function main()
-{
-    try
-    {
+async function main() {
+    try {
         map = new AMap.Map("container", {
             center: [104.10248, 30.67646],
             zoom: 14
@@ -49,18 +49,37 @@ async function main()
 
         await initPOI();
         await initCar();
-    }
-    catch (error)
-    {
+        
+        //初始化事件管理器
+        eventManager = new EventManager(map, cars, {
+            eventInterval: 45000, //45秒生成一个事件
+            eventProbability: 0.4, //40%概率
+            maxActiveEvents: 4 //最多4个同时活动事件
+        });
+        eventManager.init();
+
+        //将eventManager设置为全局变量，供事件面板使用
+        window.eventManager = eventManager;
+        
+        //如果页面已经加载了初始化函数，则调用它
+        if (window.initEventsPanel) {
+            window.initEventsPanel(eventManager);
+        }
+
+        //在页面卸载时清理资源
+        window.addEventListener('beforeunload', () => {
+            if (eventManager) {
+                eventManager.destroy();
+            }
+        });
+
+    } catch (error) {
         console.error('初始化失败: ', error);
     }
 
-    try
-    {
-        setInterval(() => update(), updateInterval);//总更新函数
-    }
-    catch (error)
-    {
+    try {
+        setInterval(() => update(), updateInterval);
+    } catch (error) {
         console.error('运行时出错: ', error);
     }
 }
@@ -116,7 +135,7 @@ async function initCar()//生成车辆
 
     data.forEach(car => {
         const marker = new AMap.Marker({
-            position: new AMap.LngLat(car.lon, car.lat),
+            position: new AMap.LngLat(car.location_lon, car.location_lat),
             icon: carIcon,
             map: map
         });
@@ -205,9 +224,7 @@ async function update()
 {
     await updateCars();//车辆位置更新
 }
-/**
- * 车辆位置及状态更新
- */
+//车辆位置更新函数，还有事件影响处理
 async function updateCars() {
     console.log("调用 updateCars");
 
@@ -215,54 +232,80 @@ async function updateCars() {
     isCarUpdating = true;
 
     try {
-        for (const car of cars) 
-        {
+        for (const car of cars) {
             const uuid = car.UUID;
-            if (car.status === 0) 
-            {
-                const recivdata = await sendPara(uuid,0,0);
-                console.log(`车辆 ${uuid} 收到目的地:`, recivdata);
-
-                // 校验目的地格式和合法性
-                if (
-                    !recivdata 
-                ) {
+            
+            // 检查车辆是否受事件影响
+            const effects = eventManager ? eventManager.getVehicleEffects(uuid) : [];
+            let speedFactor = 1.0;
+            let requiresReroute = false;
+            
+            effects.forEach(effect => {
+                if (effect.speedFactor) {
+                    speedFactor = Math.min(speedFactor, effect.speedFactor);
+                }
+                if (effect.requiresReroute) {
+                    requiresReroute = true;
+                }
+                // 显示影响信息
+                if (effect.message && Math.random() < 0.1) { // 10%概率显示消息
+                    console.log(`车辆 ${uuid}: ${effect.message}`);
+                }
+            });
+            
+            if (car.status === 0) {
+                const recivdata = await sendPara(uuid, 0, 0);
+                
+                if (!recivdata) {
                     console.warn(`车辆 ${uuid} 目标坐标无效，跳过：`, recivdata);
                     continue;
                 }
 
-                const end = [recivdata.lon, recivdata.lat];
-
-                // 获取当前位置
+                const end = [recivdata.lng, recivdata.lat];
                 const currentLngLat = car.marker.getPosition();
                 const start = [currentLngLat.lng, currentLngLat.lat];
 
-                // setPosition 调用
-                 //car.marker.setPosition(end);
-
-                try 
-                {
-                    // 执行路径规划
-                    const route = await planRoute(start, end);
-
-                    // 检查路径是否有效
-                    if (!route || !route.steps || route.steps.length === 0 || typeof route.distance !== 'number') 
-                    {
+                try {
+                    // 检查是否需要避开事件区域
+                    const routeOptions = {};
+                    if (eventManager && requiresReroute) {
+                        // 获取需要避让的事件区域
+                        const avoidEvents = eventManager.getActiveEvents().filter(e => 
+                            e.type === EventType.ROAD_CLOSURE || 
+                            (e.type === EventType.ACCIDENT && e.severity === EventSeverity.CRITICAL)
+                        );
+                        
+                        if (avoidEvents.length > 0) {
+                            // 这里可以添加避让区域的逻辑
+                            console.log(`车辆 ${uuid} 需要避开事件区域`);
+                        }
+                    }
+                    
+                    const route = await planRoute(start, end, routeOptions);
+                    
+                    if (!route || !route.steps || route.steps.length === 0 || typeof route.distance !== 'number') {
                         console.error(`车辆 ${uuid} 路径无效，跳过`);
                         continue;
                     }
+                    
                     car.status = 1;
                     const routeInfo = await drawRoute(route);
                     car.info = routeInfo;
+                    
+                    // 应用速度因子
+                    if (speedFactor < 1.0) {
+                        routeInfo.Time = Math.ceil(routeInfo.Time / speedFactor);
+                        console.log(`车辆 ${uuid} 因事件影响，行程时间增加至 ${routeInfo.Time}ms`);
+                    }
+                    
                     cartransporting(routeInfo, uuid);
-                    VideoCars(car.marker,route);
+                    VideoCars(car.marker, route, speedFactor);
 
                 } catch (err) {
                     console.error(`车辆 ${uuid} 路径规划失败:`, err);
                 }
 
-            } else if (car.status === 1) 
-            {
+            } else if (car.status === 1) {
                 cartransporting(car.info, uuid);
             }
         }
@@ -274,23 +317,23 @@ async function updateCars() {
     }
 }
 
-async function VideoCars(marker, route)
+
+async function VideoCars(marker, route, speedFactor = 1.0) 
 {
     const path = parseRouteToPath(route);
+    const adjustedDuration = Math.ceil(duration / speedFactor); // 根据速度因子调整每段停留时间
 
-    for (let i = 0; i < path.length; i++)
-    {
+    for (let i = 0; i < path.length; i++) {
         const point = path[i];
         const lng = typeof point.getLng === 'function' ? point.getLng() : point.lng;
         const lat = typeof point.getLat === 'function' ? point.getLat() : point.lat;
 
         marker.setPosition([lng, lat]);
-
-        await new Promise(resolve => setTimeout(resolve, duration));
+        //console,log(`车辆移动到: [${lng}, ${lat}]`);
+        await new Promise(resolve => setTimeout(resolve, adjustedDuration));
     }
-
-    console.log("路径跳点完成");
 }
+
 
 async function sendPara(uuid,distance,time) 
 {
@@ -310,25 +353,32 @@ async function sendPara(uuid,distance,time)
     }
 }
 //根据起终点规划路径
-function planRoute(start, end) 
-{
-    return new Promise((resolve, reject) => 
-    { 
-    driving.search(new AMap.LngLat(start[0], start[1]), new AMap.LngLat(end[0], end[1]), 
-        function (status, result)
-        {
-            if (status === 'complete' && result.routes && result.routes.length) 
-            {
-                var route= result.routes[0];
-                resolve(route);
-            } 
-            else 
-            {
-                console.error('请求失败，状态:', status+'结果'+result);
-                reject(new Error('请求失败，状态: ' + status +'结果'+result));
+function planRoute(start, end, options = {}) {
+    return new Promise((resolve, reject) => {
+        const drivingOption = {
+            policy: AMap.DrivingPolicy.LEAST_TIME,
+            ferry: 1,
+            province: '川'
+        };
+        
+        // 合并选项
+        Object.assign(drivingOption, options);
+        
+        const driving = new AMap.Driving(drivingOption);
+        
+        driving.search(
+            new AMap.LngLat(start[0], start[1]),
+            new AMap.LngLat(end[0], end[1]),
+            function (status, result) {
+                if (status === 'complete' && result.routes && result.routes.length) {
+                    var route = result.routes[0];
+                    resolve(route);
+                } else {
+                    console.error('请求失败，状态:', status, '结果', result);
+                    reject(new Error('请求失败，状态: ' + status));
+                }
             }
-        }
-     );
+        );
     });
 }
 
@@ -363,11 +413,11 @@ function drawRoute(Route)
     Route = new AMap.Polyline({
         path: path,
         isOutline: true,
-        outlineColor: '#ffeeee',
+        outlineColor: '#1a1919ff',
         borderWeight: 2,
         strokeWeight: 3,
         strokeOpacity: 0.9,
-        strokeColor: '#0091ff',
+        strokeColor: '#5360d7ff',
         lineJoin: 'round'
     });//路线的各种参数，不用管他
 
@@ -406,8 +456,8 @@ async function cartransporting(routeInfo,carUUID)
      // 设置车辆运输完成的倒计时
      if(routeInfo.Time>0)
     {
-        routeInfo.Time-=5000;
-        console.log("车辆"+carUUID+"已减少倒计时");
+        routeInfo.Time-=updateInterval;
+       // console.log("车辆"+carUUID+"已减少倒计时");
      }
      else {
         const carIndex = cars.findIndex(car => car.UUID === carUUID);
