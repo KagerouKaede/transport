@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/favicon.png" type="image/x-icon">
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/manage.css">
+  <!-- <script src="/javascript/manage.js"></script> -->
+  <title>调度沙箱管理</title>
+</head>
+
+<body>
+  <div id="app">
+    <div id="content-container">
+      <div class="panel" id="sandbox-panel">
+        <header class="panel-title">沙箱列表</header>
+        <ul id="sandbox-list">
+          <div class="sandbox-block" id="empty-tips" style="height: 256px;">
+            <span>
+              📂<span class="sandbox-title">还没有已保存的沙箱数据</span><br>
+              请点击下方 <b>+</b> 按钮<br>
+              以默认预设创建数据沙箱
+            </span>
+          </div>
+          <!-- JS生成 -->
+        </ul>
+        <footer>
+          <div class="sandbox-block rect-button" id="create-btn">+</div>
+        </footer>
+      </div>
+      <div class="panel" id="config-panel">
+        <header class="panel-title">参数明细</header>
+        <div id="status-message"></div>
+        <div id="config-content"><!-- JS生成 --></div>
+        <footer>
+          <ul id="button-entry"></ul>
+        </footer>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

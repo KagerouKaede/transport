@@ -1,8 +1,11 @@
 {
-  "packs":
+  "sandbox_name": "",
+  "create_time": "yyyy-MM-dd HH:mm:ss",
+  "simulation_cycle": 0,
+  "groups":
   [
     {
-      "name": "系统参数",
+      "title": "系统参数",
       "content":
       [
         "Main.update_interval",
@@ -12,14 +15,14 @@
       ]
     },
     {
-      "name": "调度器控制",
+      "title": "调度器控制",
       "content":
       [
         "DataUpdater.applied_scheduler"
       ]
     },
     {
-      "name": "订单上下游",
+      "title": "订单上下游",
       "content":
       [
         "ResourcePlant.stock_growth_rate",
@@ -30,7 +33,7 @@
       ]
     },
     {
-      "name": "随机事件",
+      "title": "随机事件",
       "content":
       [
         "Main.random_seed"

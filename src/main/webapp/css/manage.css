@@ -1,0 +1,338 @@
+#content-container
+{
+    display: flex;
+    align-items: stretch;
+    padding: 32px 64px;
+    height: 100%;
+}
+
+.panel
+{
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    align-items: center;
+}
+#sandbox-panel
+{
+    flex: 4;
+}
+#config-panel
+{
+    flex: 9;
+    background-color: #fff3;
+    box-shadow: 0 2px 8px #0003;
+    border-radius: 16px;
+    margin-left: 8px;
+}
+
+.panel >header
+{
+    flex-shrink: 0;
+    height: 64px;
+    width: calc(100% - 32px);
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 2px 8px #0003;
+    border-bottom: 1px solid #3498db;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+#sandbox-list
+{
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    gap: 16px;
+    padding: 0 4px;
+    list-style: none;
+}
+
+#config-content
+{
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 16px;
+}
+
+.sandbox-block
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    min-height: 64px;
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 2px solid #1e88e5bb;
+    background: #fffb;
+    color: #1e88e5bb;
+}
+
+.sandbox-block .sandbox-title
+{
+    font-weight: bold;
+    line-height: 48px;
+}
+
+.sandbox-block .sandbox-detail
+{
+    text-align: start;
+}
+
+.sandbox-block:hover
+{
+    border-color: #1e88e5;
+    color: #1e88e5;
+    background: #fff;
+}
+
+.panel >footer
+{
+    height: 96px;
+    width: 100%;
+    padding: 0 4px 16px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.panel >footer::before
+{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 0.5px;
+    background: #3498db;
+}
+
+.panel >footer .sandbox-block
+{
+    padding: 4px;
+    font-size: 32px;
+    font-weight: 900;
+}
+
+.config-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s;
+}
+
+.form-group:hover {
+    border-color: #3498db;
+    background: #f0f8ff;
+}
+
+.form-group label {
+    flex: 0 0 250px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-control {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: border 0.2s;
+    max-width: 200px;
+}
+
+.form-control:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.form-control.saving {
+    border-color: #f39c12;
+    background-color: #fffbf0;
+}
+
+.form-control.saved {
+    border-color: #27ae60;
+    background-color: #f0fff4;
+}
+
+.unit-display {
+    flex: 0 0 80px;
+    text-align: right;
+    color: #666;
+    font-size: 14px;
+    padding-left: 10px;
+}
+
+.save-status {
+    flex: 0 0 60px;
+    text-align: right;
+    font-size: 12px;
+    padding-left: 10px;
+}
+
+.saving-text {
+    color: #f39c12;
+}
+
+.saved-text {
+    color: #27ae60;
+}
+
+.config-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-count {
+    background: #3498db;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.collapse-icon {
+    transition: transform 0.3s ease;
+}
+
+.section-content {
+    transition: all 0.3s ease;
+}
+
+.section-content.collapsed {
+    display: none;
+}
+
+.status-message {
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* 启动按钮的特殊样式 */
+#start-simulation-btn {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+#start-simulation-btn:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+#start-simulation-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .content {
+        flex-direction: column;
+    }
+    
+    .preset-panel {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .form-group label {
+        flex: none;
+        margin-bottom: 8px;
+    }
+    
+    .form-control {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .unit-display {
+        flex: none;
+        text-align: left;
+        padding-left: 0;
+        margin-top: 8px;
+    }
+    
+    .save-status {
+        flex: none;
+        text-align: left;
+        padding-left: 0;
+        margin-top: 8px;
+    }
+}

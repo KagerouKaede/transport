@@ -1,0 +1,84 @@
+*
+{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-align: center;
+    font-family: "Microsoft YaHei", "HarmonyOS Sans SC", sans-serif;
+    font-style: normal;
+    font-size: 20px;
+}
+
+html, body
+{
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 50%, #81D4FA 100%);
+}
+
+#app
+{
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: column;
+}
+
+ul li
+{
+    list-style: none;
+}
+
+.hide
+{
+    display: none;
+}
+
+/* 这里只定义按钮风格样式，没有定义颜色大小等，需要额外定义 */
+
+.rect-button
+{
+    border: none;
+    transition: all 0.2s ease-out;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    /*
+     * 颜色大小样例：
+     * min-width: 280px;
+     * min-height: 70px;
+     * border-radius: 16px;
+     * background: linear-gradient(135deg, #2196F3 0%, #5C6BC0 100%);
+     * color: white;
+     */
+}
+
+.rect-button:hover
+{
+    transform: translateY(-3px);
+    box-shadow: 0 8px 8px #3c83dc26;
+}
+
+.rect-button:active
+{
+    transform: translateY(-1px);
+    box-shadow: 0 8px 8px #3c83dc1a;
+}
+
+/* 悬停会有光泽动画 */
+.shining-button::before
+{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, transparent 20%, #fff5 50%, transparent 80%);
+    transition: left 0.2s ease-out;
+}
+
+.shining-button:hover::before
+{
+    left: 100%;
+}
