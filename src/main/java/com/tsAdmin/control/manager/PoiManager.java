@@ -25,7 +25,7 @@ public class PoiManager
         poiList.clear();
 
         ResourcePlant.setStockGrowthRate(ConfigLoader.getInt("ResourcePlant.stock_growth_rate"));
-        ProcessPlant.setProcessingLoss(ConfigLoader.getInt("ProcessingPlant.processing_loss"));
+        ProcessPlant.setProcessingLoss(ConfigLoader.getInt("ProcessPlant.processing_loss"));
         ProcessPlant.setProcessingSpeed(ConfigLoader.getInt("ProcessPlant.processing_speed"));
         Purchaser.setPurchaseThreshold(ConfigLoader.getInt("Purchaser.purchase_threshold"));
         Market.setSalesRate(ConfigLoader.getInt("Market.sales_rate"));
@@ -41,7 +41,7 @@ public class PoiManager
                 (double)data.get("lat"),
                 (double)data.get("lon")
             );
-            int maxStock = (int)data.get("maxStock");
+            int maxStock = (int)data.get("maxstock");
 
             Poi toAdd = switch ((String)data.get("class"))
             {

@@ -29,7 +29,7 @@ public class MainConfig extends JFinalConfig
     {
         me.add("/", IndexController.class);
         me.add("/data", DataController.class);
-        me.add("/conf", SandboxController.class);
+        me.add("/sandbox", SandboxController.class);
     }
 
     /** 配置插件 */

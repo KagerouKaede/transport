@@ -31,7 +31,7 @@ ul li
 
 .hide
 {
-    display: none;
+    display: none !important;
 }
 
 /* 这里只定义按钮风格样式，没有定义颜色大小等，需要额外定义 */

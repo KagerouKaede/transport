@@ -37,7 +37,7 @@ public class DBManager
             return 0;
         }
 
-        String sql = "SELECT COUNT(*) AS count WHERE preset_UUID = ? FROM " + tableName;
+        String sql = String.format("SELECT COUNT(*) AS count FROM %s WHERE sandbox_UUID = ?", tableName);
         Record record = Db.findFirst(sql, ConfigLoader.getConfigUUID());
         return record != null ? record.getInt("count") : 0;
     }
@@ -59,7 +59,9 @@ public class DBManager
 
             for (String table : POIs.keySet())
             {
-                String sql = "SELECT location_ID, upstream_suppliers, maxstock, product_type, name, location_lat, location_lon FROM " + table;
+                String sql = table == "poi_resource_plant" ?
+                ("SELECT location_ID, maxstock, product_type, name, location_lat, location_lon FROM " + table) :
+                ("SELECT location_ID, upstream_suppliers, maxstock, product_type, name, location_lat, location_lon FROM " + table);
                 List<Record> rawData = Db.find(sql);
 
                 if (rawData == null || rawData.isEmpty()) break;
@@ -69,7 +71,7 @@ public class DBManager
                     Map<String, Object> element = Map.of(
                         "UUID", record.get("location_ID"),
                         "class", POIs.get(table),
-                        "upstream", record.get("upstream_suppliers"),
+                        "upstream", record.get("upstream_suppliers", ""),
                         "maxstock", record.get("maxstock"),
                         "type", record.get("product_type"),
                         "name", record.get("name"),
@@ -92,7 +94,7 @@ public class DBManager
 
     public static double getStock(String poiUuid)
     {
-        String sql = "SELECT stock FROM poi_stock WHERE preset_UUID = ? AND poi_UUID = ? LIMIT 1";
+        String sql = "SELECT stock FROM poi_stock WHERE sandbox_UUID = ? AND poi_UUID = ? LIMIT 1";
         Record record = Db.findFirst(sql, ConfigLoader.getConfigUUID(), poiUuid);
         return record.getDouble("stock");
     }
@@ -102,7 +104,7 @@ public class DBManager
         try
         {
             List<Map<String, String>> demandList = new ArrayList<>();
-            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand WHERE preset_UUID = ?";
+            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand WHERE sandbox_UUID = ?";
             List<Record> rawData = Db.find(sql, ConfigLoader.getConfigUUID());
             
             if (rawData != null && !rawData.isEmpty())
@@ -165,12 +167,12 @@ public class DBManager
         }
     }
 
-    public static List<Map<String, String>> getPresetList()
+    public static List<Map<String, String>> getSandboxList()
     {
         try
         {
-            List<Map<String, String>> presetList = new ArrayList<>();
-            String sql = "SELECT UUID, content FROM preset";
+            List<Map<String, String>> sandboxList = new ArrayList<>();
+            String sql = "SELECT UUID, content FROM sandbox";
             List<Record> rawData = Db.find(sql);
 
             if (rawData != null && !rawData.isEmpty())
@@ -181,25 +183,25 @@ public class DBManager
                         "UUID", record.getStr("UUID"),
                         "content", record.getStr("content")
                     );
-                    presetList.add(element);
+                    sandboxList.add(element);
                 }
             }
 
-            logger.info("Got preset list from SQL (total {} records)", presetList.size());
-            return presetList;
+            logger.info("Got sandbox list from SQL (total {} records)", sandboxList.size());
+            return sandboxList;
         }
         catch (Exception e)
         {
-            logger.error("Failed to get preset list from SQL", e);
+            logger.error("Failed to get sandbox list from SQL", e);
             return null;
         }
     }
 
-    public static String getPreset(String uuid)
+    public static String getSandbox(String uuid)
     {
         try
         {
-            String sql = "SELECT content FROM preset WHERE UUID = ? LIMIT 1";
+            String sql = "SELECT content FROM sandbox WHERE UUID = ? LIMIT 1";
             Record record = Db.findFirst(sql, uuid);
 
             if (record != null)
@@ -207,18 +209,18 @@ public class DBManager
                 String content = record.getStr("content");
                 int length = content != null ? content.length() : 0;
 
-                logger.info("Got preset(UUID: {}) from SQL, content length: {}", uuid, length);
+                logger.info("Got sandbox(UUID: {}) from SQL, content length: {}", uuid, length);
                 return content;
             }
             else
             {
-                logger.warn("Preset(UUID: {}) not found, null returned", uuid);
+                logger.warn("Sandbox(UUID: {}) not found, null returned", uuid);
                 return null;
             }
         }
         catch (Exception e)
         {
-            logger.error("Failed to get preset(UUID: {}) from SQL", uuid, e);
+            logger.error("Failed to get sandbox(UUID: {}) from SQL", uuid, e);
             return null;
         }
     }
@@ -228,7 +230,7 @@ public class DBManager
         try
         {
             List<String> uuidInDB = new ArrayList<>();
-            String selectSql = "SELECT UUID FROM demand WHERE preset_UUID = ?";
+            String selectSql = "SELECT UUID FROM demand WHERE sandbox_UUID = ?";
             for (Record record : Db.find(selectSql, ConfigLoader.getConfigUUID()))
             {
                 uuidInDB.add(record.getStr("UUID"));
@@ -243,7 +245,7 @@ public class DBManager
                     Demand demand = demandMap.get(uuid);
                     Record demandRecord = new Record();
                     demandRecord.set("UUID", demand.getUUID())
-                                .set("preset_UUID", ConfigLoader.getConfigUUID())
+                                .set("sandbox_UUID", ConfigLoader.getConfigUUID())
                                 .set("type", demand.getType().name())
                                 .set("quantity",demand.getQuantity())
                                 .set("volume", demand.getVolume())
@@ -348,13 +350,13 @@ public class DBManager
     }
 
     /**
-     * 保存预设到数据库
-     * @param isNew 是否为新预设
-     * @param uuid 将保存预设的 UUID
-     * @param content 预设内容，格式同resources/config.json
+     * 保存沙箱到数据库
+     * @param isNew 是否为新沙箱
+     * @param uuid 将保存沙箱的 UUID
+     * @param content 沙箱内容，格式同resources/config.json
      * @return 此次保存操作成功与否
      */
-    public static boolean savePreset(boolean isNew, String uuid, String content)
+    public static boolean saveSandbox(boolean isNew, String uuid, String content)
     {
         try
         {
@@ -362,41 +364,41 @@ public class DBManager
 
             if (isNew)
             {
-                Record presetRecord = new Record();
-                presetRecord.set("UUID", uuid)
+                Record sandboxRecord = new Record();
+                sandboxRecord.set("UUID", uuid)
                             .set("content", content);
-                success = Db.save("preset", presetRecord);
+                success = Db.save("sandbox", sandboxRecord);
             }
             else
             {
-                String updateSql = "UPDATE preset SET content = ? WHERE UUID = ?";
+                String updateSql = "UPDATE sandbox SET content = ? WHERE UUID = ?";
                 success = Db.update(updateSql, content, uuid) > 0;
             }
 
-            logger.debug("Saved preset(UUID: {}), success status: {}", uuid, success);
+            logger.debug("Saved sandbox(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to save preset(UUID: {})", uuid, e);
+            logger.error("Failed to save sandbox(UUID: {})", uuid, e);
             return false;
         }
     }
 
-    public static boolean rmvPreset(String uuid)
+    public static boolean removeSandbox(String uuid)
     {
         try
         {
             boolean success = false;
-            String sql = "DELETE FROM preset WHERE UUID = ?";
+            String sql = "DELETE FROM sandbox WHERE UUID = ?";
             success = Db.delete(sql, uuid) > 0;
 
-            logger.debug("Removed preset(UUID: {}), success status: {}", uuid, success);
+            logger.debug("Removed sandbox(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to remove preset(UUID: {})", uuid, e);
+            logger.error("Failed to remove sandbox(UUID: {})", uuid, e);
             return false;
         }
     }
