@@ -17,7 +17,6 @@
     {
       "title": "调度器控制",
       "content": [
-        "DataUpdater.applied_scheduler",
         "MultiObjective.enabled_targets"
       ]
     },
@@ -105,14 +104,6 @@
       "unit": "min",
       "value": 30
     },
-    "DataUpdater.applied_scheduler": {
-      "name": "采用的调度器",
-      "desc": "已废弃",
-      "const": false,
-      "type": "Select",
-      "value": "Greedy",
-      "allow": ["Greedy", "SA"]
-    },
     "CarManager.car_num": {
       "name": "模拟车辆数",
       "desc": "参与模拟调度的车辆数量",
@@ -179,6 +170,13 @@
       "type": "BooleanArray",
       "value": ["true", "true", "true", "true", "true"],
       "allow": ["true", "false"]
+    },
+    "MultiObjective.consider_wait_time": {
+      "name": "...",
+      "desc": "...",
+      "type": "Boolean",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.global_enabled": {
       "name": "事件启用",

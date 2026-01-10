@@ -201,12 +201,13 @@ public class DataController extends Controller
 
         // 保存统计数据到数据库
         String jsonContent = JsonKit.toJson(data);
-        DBManager.saveToSandbox(null, null, null, null,
-                               Ontime_delivery_rate,
-                               totalDelayTime,
-                               averageDelayTime,
-                               Average_order_cycle,
-                               null);
+        // DBManager.saveToSandbox(null, null, null, null,
+        //                        Ontime_delivery_rate,
+        //                        totalDelayTime,
+        //                        averageDelayTime,
+        //                        Average_order_cycle,
+        //                        null);
+        // FIXME
 
         renderJson(jsonContent);
     }
@@ -223,12 +224,14 @@ public class DataController extends Controller
 
         // 保存统计数据到数据库
         String jsonContent = JsonKit.toJson(data);
-        DBManager.saveToSandbox(null, null, null, null,
-                               null, null, null, null,
-                               systemCriticalLoad);
+        // DBManager.saveToSandbox(null, null, null, null,
+        //                        null, null, null, null,
+        //                        systemCriticalLoad);
+        // FIXME
 
         renderJson(jsonContent);
     }
+
     /**
      * 前端尝试获取特定车辆的下一个目的地时调用，是车辆更新的关键函数
      * <p>在车辆滴答一次后，若进入需要规划路线的状态，则返回目的地坐标，否则返回{@code null}
