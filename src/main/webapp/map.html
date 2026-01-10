@@ -757,13 +757,20 @@
     async function fetchVehicleDashboardData(uuid) {
       try {
         const response = await fetch(`/data/getDashboardData?UUID=${uuid}`);
-        const data = await response.json();
-        
+        const resp = await response.json();
+
+        if (!resp || !resp.success) {
+          console.error(`getDashboardData error for ${uuid}:`, resp);
+          return {};
+        }
+
+        const data = JSON.parse(resp.message || '{}');
+
         // 计算有效运时比（荷载非零时长 / 非空闲时长）
         // 这里需要根据实际数据计算，假设有荷载时长字段，这里简化处理
-        const effectiveTimeRatio = data.totalDistance > 0 ? 
-          data.totalDistance / (data.totalDistance + (data.waitingTime || 0)) : 0;
-        
+        const effectiveTimeRatio = (parseFloat(data.totalDistance) || 0) > 0 ?
+          (parseFloat(data.totalDistance) || 0) / ((parseFloat(data.totalDistance) || 0) + (parseFloat(data.waitingTime) || 0)) : 0;
+
         // 确保返回的字段与后端一致（驼峰和下划线混合）
         return {
           ...data,
@@ -779,8 +786,15 @@
     async function fetchCarStatistics() {
       try {
         const response = await fetch('/data/getAllCarsStatistics');
-        const data = await response.json();
-        
+        const resp = await response.json();
+
+        if (!resp || !resp.success) {
+          console.error('getAllCarsStatistics error:', resp);
+          return {};
+        }
+
+        const data = JSON.parse(resp.message || '{}');
+
         // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
         const transformedData = {
           loadUtilizationRateMean: parseFloat(data.Load_utilization_rate_mean) || 0,
@@ -790,7 +804,7 @@
           availableCount: parseInt(data.Available_count) || 0,
           malfunctionCount: parseInt(data.Malfunction_count) || 0
         };
-        
+
         return transformedData;
       } catch (err) {
         console.error('获取车辆统计指标失败:', err);
@@ -802,8 +816,15 @@
     async function fetchServiceQualityMetrics() {
       try {
         const response = await fetch('/data/getServiceQualityMetrics');
-        const data = await response.json();
-        
+        const resp = await response.json();
+
+        if (!resp || !resp.success) {
+          console.error('getServiceQualityMetrics error:', resp);
+          return {};
+        }
+
+        const data = JSON.parse(resp.message || '{}');
+
         // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
         const transformedData = {
           ontimeDeliveryRate: parseFloat(data.Ontime_delivery_rate) || 0,
@@ -811,7 +832,7 @@
           averageDelayTime: parseFloat(data.Average_delay_time) || 0,
           averageOrderCycle: parseFloat(data.Average_order_cycle) || 0
         };
-        
+
         return transformedData;
       } catch (err) {
         console.error('获取服务质量指标失败:', err);
