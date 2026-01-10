@@ -466,7 +466,7 @@ public class DBManager
         try
         {
             String uuid = ConfigLoader.getConfigUUID();
-            
+
             // 先查询是否存在该 UUID 的记录
             String selectSql = "SELECT UUID FROM sandbox WHERE UUID = ? LIMIT 1";
             Record existingRecord = Db.findFirst(selectSql, uuid);

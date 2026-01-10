@@ -1,7 +1,9 @@
 package com.tsAdmin.model;
 
 import com.tsAdmin.common.Coordinate;
+import com.tsAdmin.control.manager.DemandManager;
 import com.tsAdmin.model.poi.Poi;
+import com.tsAdmin.model.poi.Purchaser;
 
 /** 需求 */
 public class Demand
@@ -20,6 +22,12 @@ public class Demand
         this.destination = destination;
         this.product = product;
         this.isAssigned = false;
+    }
+
+    public void onCompleted()
+    {
+        ((Purchaser)this.destination).onDemandCompleted();
+        DemandManager.removeDemand(uuid);
     }
 
     // Setter

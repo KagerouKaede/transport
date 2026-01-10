@@ -73,4 +73,10 @@ public abstract class Purchaser extends Poi
 
         demand = DemandManager.generateDemand(targetUpstream, this, quantity);
     }
+
+    public void onDemandCompleted()
+    {
+        stock += demand.getQuantity();
+        demand = null;
+    }
 }

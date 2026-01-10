@@ -133,10 +133,9 @@ public void saveSandbox()
             {
                 long randomSeed = new Random().nextLong();
 
-                // 由于JsonNode是不可变的，需要创建新的ObjectNode来修改
                 ObjectNode configsObjectNode = (ObjectNode) configsNode;
                 configsObjectNode.put("Main.random_seed", randomSeed);
-                
+
                 // 将修改后的JSON转换回字符串
                 content = objectMapper.writeValueAsString(contentNode);
             }

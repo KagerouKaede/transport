@@ -474,11 +474,11 @@ class SandboxManager
                     if (result.success) {
                         this.toast('success', editMode ? '沙箱配置已更新' : '沙箱创建成功');
                         panel.classList.add('hide');
-                        
+
                         this.sandboxList = [];
                         await this.fetchSandboxList();
                         this.renderSandboxPanel();
-                        
+
                         if (editMode && this.currentInfo) {
                             const newSandbox = this.sandboxList.find(s => s.uuid === this.currentInfo.uuid);
                             if (newSandbox) {
@@ -497,11 +497,11 @@ class SandboxManager
                 this.toast('error', '保存失败: ' + error.message);
             }
         };
-        
+
         submitBtn.replaceWith(submitBtn.cloneNode(true));
         const newSubmitBtn = document.getElementById('create-panel-submit');
         newSubmitBtn.addEventListener('click', submitHandler);
-        
+
         panel.classList.remove('hide');
     }
 
