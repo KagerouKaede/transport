@@ -107,6 +107,7 @@ public class CarManager
                 carMap.put(uuid, car);
             }
         }
+        DBManager.saveCarMap(carMap);
     }
 
     public static void onStop() { DBManager.saveCarMap(carMap); }
