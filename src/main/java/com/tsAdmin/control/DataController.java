@@ -207,13 +207,12 @@ public class DataController extends Controller
 
         // 保存统计数据到数据库
         String jsonContent = JsonKit.toJson(data);
-        // DBManager.saveToSandbox(null, null, null, null,
-        //                        Ontime_delivery_rate,
-        //                        totalDelayTime,
-        //                        averageDelayTime,
-        //                        Average_order_cycle,
-        //                        null);
-        // FIXME
+        DBManager.saveToSandbox(null, null, null, null,
+                               Ontime_delivery_rate,
+                               totalDelayTime,
+                               averageDelayTime,
+                               Average_order_cycle,
+                               null);
 
         renderJson(jsonContent);
     }
@@ -230,10 +229,9 @@ public class DataController extends Controller
 
         // 保存统计数据到数据库
         String jsonContent = JsonKit.toJson(data);
-        // DBManager.saveToSandbox(null, null, null, null,
-        //                        null, null, null, null,
-        //                        systemCriticalLoad);
-        // FIXME
+        DBManager.saveToSandbox(null, null, null, null,
+                               null, null, null, null,
+                               systemCriticalLoad);
 
         renderJson(jsonContent);
     }
