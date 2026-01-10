@@ -1,16 +1,13 @@
 {
-  "info":
-  {
+  "info": {
     "sandbox_name": "Sandbox #0",
     "create_time": "yyyy-MM-dd HH:mm:ss",
     "simulation_cycle": 0
   },
-  "groups":
-  [
+  "groups": [
     {
       "title": "系统参数",
-      "content":
-      [
+      "content": [
         "Main.update_interval",
         "CarManager.car_num",
         "DemandManager.max_demand_per_cycle",
@@ -19,16 +16,14 @@
     },
     {
       "title": "调度器控制",
-      "content":
-      [
+      "content": [
         "DataUpdater.applied_scheduler",
         "MultiObjective.enabled_targets"
       ]
     },
     {
       "title": "订单上下游",
-      "content":
-      [
+      "content": [
         "ResourcePlant.stock_growth_rate",
         "ProcessPlant.processing_loss",
         "ProcessPlant.processing_speed",
@@ -37,46 +32,56 @@
       ]
     },
     {
-      "title": "随机事件",
-      "content":
-      [
+      "title": "事件全局配置",
+      "content": [
         "Event.global_enabled",
         "Event.max_active_events",
-        "Event.global_probability",
+        "Event.global_probability"
+      ]
+    },
+    {
+      "title": "天气事件配置",
+      "content": [
         "Event.weather.enabled",
         "Event.weather.max_count",
         "Event.weather.min_distance",
-        "Event.weather.types_allowed",
-        "Event.weather.type_probabilities",
-        "Event.weather.severity_distribution",
-        "Event.weather.duration_range",
-        "Event.weather.speed_factors",
+        "Event.weather.duration_min",
+        "Event.weather.duration_max"
+      ]
+    },
+    {
+      "title": "交通拥堵配置",
+      "content": [
         "Event.traffic_jam.enabled",
         "Event.traffic_jam.probability",
         "Event.traffic_jam.max_count",
-        "Event.traffic_jam.severity_distribution",
-        "Event.traffic_jam.duration_range",
-        "Event.traffic_jam.speed_factors",
+        "Event.traffic_jam.duration_min",
+        "Event.traffic_jam.duration_max"
+      ]
+    },
+    {
+      "title": "交通事故配置",
+      "content": [
         "Event.accident.enabled",
         "Event.accident.probability",
         "Event.accident.max_count",
-        "Event.accident.severity_distribution",
-        "Event.accident.duration_range",
-        "Event.accident.stop_durations",
-        "Event.accident.speed_factors",
+        "Event.accident.duration_min",
+        "Event.accident.duration_max"
+      ]
+    },
+    {
+      "title": "道路封闭配置",
+      "content": [
         "Event.road_closure.enabled",
         "Event.road_closure.probability",
         "Event.road_closure.max_count",
-        "Event.road_closure.severity_distribution",
-        "Event.road_closure.duration_range",
-        "Event.road_closure.closure_types"
+        "Event.road_closure.duration_min",
+        "Event.road_closure.duration_max"
       ]
     }
   ],
-  "configs":
-  {
-    "Main.update_interval":
-    {
+  "configs": {
+    "Main.update_interval": {
       "name": "后端更新间隔",
       "desc": "后端数据更新的时间间隔",
       "const": false,
@@ -85,16 +90,14 @@
       "value": 5,
       "range": [1, 5]
     },
-    "Main.random_seed":
-    {
+    "Main.random_seed": {
       "name": "随机种子",
       "desc": "控制全局随机数生成的种子，留空则由系统自动生成",
       "const": true,
       "type": "Long",
       "value": null
     },
-    "Timer.tick_speed":
-    {
+    "Timer.tick_speed": {
       "name": "时间步进",
       "desc": "数据更新间隔所对应的现实时间流逝时长",
       "const": false,
@@ -102,8 +105,7 @@
       "unit": "min",
       "value": 30
     },
-    "DataUpdater.applied_scheduler":
-    {
+    "DataUpdater.applied_scheduler": {
       "name": "采用的调度器",
       "desc": "已废弃",
       "const": false,
@@ -111,8 +113,7 @@
       "value": "Greedy",
       "allow": ["Greedy", "SA"]
     },
-    "CarManager.car_num":
-    {
+    "CarManager.car_num": {
       "name": "模拟车辆数",
       "desc": "参与模拟调度的车辆数量",
       "const": true,
@@ -120,16 +121,14 @@
       "unit": "辆",
       "value": 100
     },
-    "DemandManager.max_demand_per_cycle":
-    {
+    "DemandManager.max_demand_per_cycle": {
       "name": "每周期最大订单数",
       "desc": "每个周期生成订单的最大数量，达到该数值后厂商的下单请求将被拒绝",
       "const": false,
       "type": "Integer",
       "value": 30
     },
-    "ResourcePlant.stock_growth_rate":
-    {
+    "ResourcePlant.stock_growth_rate": {
       "name": "生产厂库存增长率",
       "desc": "每周期库存增长量 = 剩余库存 * 增长率",
       "const": false,
@@ -138,8 +137,7 @@
       "value": 10,
       "range": [1, 100]
     },
-    "ProcessPlant.processing_loss":
-    {
+    "ProcessPlant.processing_loss": {
       "name": "加工厂加工损耗率",
       "desc": "由原材料到产物的加工损耗比率",
       "const": false,
@@ -148,8 +146,7 @@
       "value": 10,
       "range": [0, 99]
     },
-    "ProcessPlant.processing_speed":
-    {
+    "ProcessPlant.processing_speed": {
       "name": "加工厂加工速度",
       "desc": "每周期加工量 = MIN(剩余原材料, 最大库存 * 加工速度)",
       "const": false,
@@ -158,8 +155,7 @@
       "value": 5,
       "range": [1, 100]
     },
-    "Purchaser.purchase_threshold":
-    {
+    "Purchaser.purchase_threshold": {
       "name": "厂商下单阈值",
       "desc": "厂商在当前没有未完成的购买订单且库存低于阈值时尝试生成订单",
       "const": false,
@@ -168,8 +164,7 @@
       "value": 50,
       "range": [15, 85]
     },
-    "Market.sales_rate":
-    {
+    "Market.sales_rate": {
       "name": "市场售卖速率",
       "desc": "每周期库存减少量 = 现有库存 * 售卖速率",
       "const": false,
@@ -178,8 +173,7 @@
       "value": 5,
       "range": [1, 100]
     },
-    "MultiObjective.enabled_targets":
-    {
+    "MultiObjective.enabled_targets": {
       "name": "多目标选择器",
       "desc": "选择多目标优化指标，格式为[总等待时间,总空驶里程,车辆利用率,总运输重量,总碳排]",
       "type": "BooleanArray",
@@ -187,291 +181,179 @@
       "allow": ["true", "false"]
     },
     "Event.global_enabled": {
-      "name": "全局事件开关",
-      "desc": "是否启用随机事件系统",
-      "type": "Boolean",
-      "value": true
+      "name": "事件启用",
+      "desc": "是否允许生成随机事件",
+      "type": "Select",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.max_active_events": {
       "name": "最大活动事件数",
-      "desc": "同时存在的最大事件数量",
+      "desc": "最大同时活动的随机事件数量",
       "type": "Integer",
-      "unit": "个",
       "value": 8,
-      "range": [1, 20]
+      "range": [1, 20],
+      "unit": "个"
     },
     "Event.global_probability": {
-      "name": "全局事件生成概率",
-      "desc": "每个周期生成事件的概率",
-      "type": "Float",
+      "name": "全局生成概率",
+      "desc": "每个周期生成事件的概率（0-1之间）",
+      "type": "Number",
       "value": 0.6,
-      "range": [0.0, 1.0]
+      "range": [0, 1]
     },
     "Event.weather.enabled": {
-      "name": "天气事件开关",
+      "name": "天气事件启用",
       "desc": "是否启用天气事件",
-      "type": "Boolean",
-      "value": true
+      "type": "Select",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.weather.max_count": {
       "name": "最大天气事件数",
       "desc": "同时存在的最大天气事件数量",
       "type": "Integer",
-      "unit": "个",
       "value": 3,
-      "range": [1, 5]
+      "range": [1, 5],
+      "unit": "个"
     },
     "Event.weather.min_distance": {
-      "name": "天气事件最小距离",
+      "name": "最小距离",
       "desc": "天气事件之间的最小距离",
       "type": "Integer",
-      "unit": "米",
       "value": 5000,
-      "range": [1000, 10000]
+      "range": [1000, 20000],
+      "unit": "米"
     },
-    "Event.weather.types_allowed": {
-      "name": "允许的天气类型",
-      "desc": "允许生成的天气类型",
-      "type": "Array",
-      "value": ["rain", "snow", "storm", "sandstorm", "fog"]
+    "Event.weather.duration_min": {
+      "name": "最短持续时间",
+      "desc": "天气事件的最短持续时间",
+      "type": "Integer",
+      "value": 60,
+      "range": [10, 300],
+      "unit": "分钟"
     },
-    "Event.weather.type_probabilities": {
-      "name": "天气类型概率",
-      "desc": "各种天气类型的生成概率分布",
-      "type": "Object",
-      "value": {
-        "rain": 0.4,
-        "snow": 0.2,
-        "storm": 0.1,
-        "sandstorm": 0.1,
-        "fog": 0.2
-      }
-    },
-    "Event.weather.severity_distribution": {
-      "name": "天气严重程度分布",
-      "desc": "天气事件严重程度的概率分布",
-      "type": "Object",
-      "value": {
-        "low": 0.5,
-        "medium": 0.3,
-        "high": 0.15,
-        "critical": 0.05
-      }
-    },
-    "Event.weather.duration_range": {
-      "name": "天气持续时间范围",
-      "desc": "天气事件的持续时间范围（分钟）",
-      "type": "Array",
-      "value": [60, 180]
-    },
-    "Event.weather.speed_factors": {
-      "name": "天气速度影响因子",
-      "desc": "不同天气类型和严重程度对应的速度因子",
-      "type": "Object",
-      "value": {
-        "rain": {
-          "low": 0.8,
-          "medium": 0.6,
-          "high": 0.4,
-          "critical": 0.2
-        },
-        "snow": {
-          "low": 0.7,
-          "medium": 0.5,
-          "high": 0.3,
-          "critical": 0.1
-        },
-        "storm": {
-          "low": 0.6,
-          "medium": 0.4,
-          "high": 0.2,
-          "critical": 0.1
-        },
-        "sandstorm": {
-          "low": 0.5,
-          "medium": 0.3,
-          "high": 0.15,
-          "critical": 0.05
-        },
-        "fog": {
-          "low": 0.9,
-          "medium": 0.7,
-          "high": 0.5,
-          "critical": 0.3
-        }
-      }
+    "Event.weather.duration_max": {
+      "name": "最长持续时间",
+      "desc": "天气事件的最长持续时间",
+      "type": "Integer",
+      "value": 180,
+      "range": [30, 600],
+      "unit": "分钟"
     },
     "Event.traffic_jam.enabled": {
-      "name": "交通拥堵开关",
+      "name": "拥堵事件启用",
       "desc": "是否启用交通拥堵事件",
-      "type": "Boolean",
-      "value": true
+      "type": "Select",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.traffic_jam.probability": {
-      "name": "交通拥堵生成概率",
-      "desc": "每辆车生成拥堵事件的概率",
-      "type": "Float",
+      "name": "拥堵生成概率",
+      "desc": "每个运输中车辆生成拥堵事件的概率",
+      "type": "Number",
       "value": 0.05,
-      "range": [0.0, 1.0]
+      "range": [0, 1]
     },
     "Event.traffic_jam.max_count": {
       "name": "最大拥堵事件数",
       "desc": "同时存在的最大拥堵事件数量",
       "type": "Integer",
-      "unit": "个",
       "value": 3,
-      "range": [1, 10]
+      "range": [1, 10],
+      "unit": "个"
     },
-    "Event.traffic_jam.severity_distribution": {
-      "name": "拥堵严重程度分布",
-      "desc": "拥堵事件严重程度的概率分布",
-      "type": "Object",
-      "value": {
-        "low": 0.4,
-        "medium": 0.4,
-        "high": 0.15,
-        "critical": 0.05
-      }
+    "Event.traffic_jam.duration_min": {
+      "name": "拥堵最短持续时间",
+      "desc": "拥堵事件的最短持续时间",
+      "type": "Integer",
+      "value": 10,
+      "range": [5, 60],
+      "unit": "分钟"
     },
-    "Event.traffic_jam.duration_range": {
-      "name": "拥堵持续时间范围",
-      "desc": "拥堵事件的持续时间范围（分钟）",
-      "type": "Array",
-      "value": [10, 60]
-    },
-    "Event.traffic_jam.speed_factors": {
-      "name": "拥堵速度影响因子",
-      "desc": "不同拥堵严重程度对应的速度因子",
-      "type": "Object",
-      "value": {
-        "low": 0.7,
-        "medium": 0.4,
-        "high": 0.2,
-        "critical": 0.1
-      }
+    "Event.traffic_jam.duration_max": {
+      "name": "拥堵最长持续时间",
+      "desc": "拥堵事件的最长持续时间",
+      "type": "Integer",
+      "value": 60,
+      "range": [30, 180],
+      "unit": "分钟"
     },
     "Event.accident.enabled": {
-      "name": "交通事故开关",
+      "name": "事故事件启用",
       "desc": "是否启用交通事故事件",
-      "type": "Boolean",
-      "value": true
+      "type": "Select",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.accident.probability": {
       "name": "事故生成概率",
-      "desc": "每辆车发生事故的概率",
-      "type": "Float",
+      "desc": "每个运输中车辆生成事故事件的概率",
+      "type": "Number",
       "value": 0.02,
-      "range": [0.0, 1.0]
+      "range": [0, 1]
     },
     "Event.accident.max_count": {
-      "name": "最大事故数",
-      "desc": "同时存在的最大事故数量",
+      "name": "最大事故事件数",
+      "desc": "同时存在的最大事故事件数量",
       "type": "Integer",
-      "unit": "个",
       "value": 3,
-      "range": [1, 10]
+      "range": [1, 10],
+      "unit": "个"
     },
-    "Event.accident.severity_distribution": {
-      "name": "事故严重程度分布",
-      "desc": "事故严重程度的概率分布",
-      "type": "Object",
-      "value": {
-        "low": 0.6,
-        "medium": 0.3,
-        "high": 0.08,
-        "critical": 0.02
-      }
+    "Event.accident.duration_min": {
+      "name": "事故最短持续时间",
+      "desc": "事故事件的最短持续时间",
+      "type": "Integer",
+      "value": 10,
+      "range": [5, 60],
+      "unit": "分钟"
     },
-    "Event.accident.duration_range": {
-      "name": "事故持续时间范围",
-      "desc": "事故影响的持续时间范围（分钟）",
-      "type": "Array",
-      "value": [10, 45]
-    },
-    "Event.accident.stop_durations": {
-      "name": "事故停车时间",
-      "desc": "不同严重程度事故的停车时间（分钟）",
-      "type": "Object",
-      "value": {
-        "low": 0,
-        "medium": 2,
-        "high": 5,
-        "critical": 10
-      }
-    },
-    "Event.accident.speed_factors": {
-      "name": "事故速度影响因子",
-      "desc": "不同事故严重程度对应的速度因子",
-      "type": "Object",
-      "value": {
-        "low": 0.8,
-        "medium": 0.6,
-        "high": 0.4,
-        "critical": 0.2
-      }
+    "Event.accident.duration_max": {
+      "name": "事故最长持续时间",
+      "desc": "事故事件的最长持续时间",
+      "type": "Integer",
+      "value": 45,
+      "range": [20, 120],
+      "unit": "分钟"
     },
     "Event.road_closure.enabled": {
-      "name": "道路封闭开关",
+      "name": "道路封闭启用",
       "desc": "是否启用道路封闭事件",
-      "type": "Boolean",
-      "value": true
+      "type": "Select",
+      "value": true,
+      "allow": [true, false]
     },
     "Event.road_closure.probability": {
       "name": "道路封闭生成概率",
-      "desc": "每辆车触发道路封闭的概率",
-      "type": "Float",
+      "desc": "每个运输中车辆生成道路封闭事件的概率",
+      "type": "Number",
       "value": 0.03,
-      "range": [0.0, 1.0]
+      "range": [0, 1]
     },
     "Event.road_closure.max_count": {
-      "name": "最大封闭事件数",
+      "name": "最大道路封闭数",
       "desc": "同时存在的最大道路封闭数量",
       "type": "Integer",
-      "unit": "个",
       "value": 2,
-      "range": [1, 5]
+      "range": [1, 5],
+      "unit": "个"
     },
-    "Event.road_closure.severity_distribution": {
-      "name": "封闭严重程度分布",
-      "desc": "道路封闭严重程度的概率分布",
-      "type": "Object",
-      "value": {
-        "low": 0.3,
-        "medium": 0.4,
-        "high": 0.25,
-        "critical": 0.05
-      }
+    "Event.road_closure.duration_min": {
+      "name": "封闭最短持续时间",
+      "desc": "道路封闭的最短持续时间",
+      "type": "Integer",
+      "value": 15,
+      "range": [5, 60],
+      "unit": "分钟"
     },
-    "Event.road_closure.duration_range": {
-      "name": "封闭持续时间范围",
-      "desc": "道路封闭的持续时间范围（分钟）",
-      "type": "Array",
-      "value": [15, 90]
-    },
-    "Event.road_closure.closure_types": {
-      "name": "封闭类型分布",
-      "desc": "完全封闭和部分封闭的概率分布",
-      "type": "Object",
-      "value": {
-        "full": 0.3,
-        "partial": 0.7
-      }
-    },
-    "TimeManager.morning_peak_start": {
-      "name": "早高峰开始时间",
-      "desc": "早高峰开始的小时数（24小时制）",
-      "type": "Float",
-      "unit": "时",
-      "value": 8.0,
-      "range": [0.0, 24.0]
-    },
-    "TimeManager.morning_peak_end": {
-      "name": "早高峰结束时间",
-      "desc": "早高峰结束的小时数（24小时制）",
-      "type": "Float",
-      "unit": "时",
-      "value": 9.5,
-      "range": [0.0, 24.0]
+    "Event.road_closure.duration_max": {
+      "name": "封闭最长持续时间",
+      "desc": "道路封闭的最长持续时间",
+      "type": "Integer",
+      "value": 90,
+      "range": [30, 240],
+      "unit": "分钟"
     }
   }
 }
