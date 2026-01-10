@@ -1,6 +1,5 @@
 package com.tsAdmin.control;
 
-import java.lang.Thread.State;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -131,6 +130,8 @@ public class DataController extends Controller
                 }
             }
         }
+        // 保存统计数据到数据库
+        DBManager.saveStatisticsToCarDB(car);
         //Map<Double,List<Map<String,String>>> finaldata = new HashMap<>();
         //finaldata.put(cycleCost, carData);
         renderJson(JsonKit.toJson(data));
@@ -171,7 +172,15 @@ public class DataController extends Controller
         data.put("Capacity_utilization_rate_mean", String.valueOf(capacityMean));
         data.put("Capacity_utilization_rate_variance", String.valueOf(capacityVariance));
         
-        renderJson(JsonKit.toJson(data));
+        // 保存统计数据到数据库
+        String jsonContent = JsonKit.toJson(data);
+        DBManager.saveToSandbox(loadMean,
+                               loadVariance,
+                               capacityMean,
+                               capacityVariance,
+                               null, null, null, null, null);
+        
+        renderJson(jsonContent);
     }
 
     /**获取服务质量指标 */
@@ -181,7 +190,8 @@ public class DataController extends Controller
         double Ontime_delivery_rate = FreezeTimes / (double)(StateChangeTimes/5);
         data.put("Ontime_delivery_rate", String.valueOf(Ontime_delivery_rate));
         data.put("Total_delay_time", String.valueOf(totalDelayTime));
-        data.put("Average_delay_time", String.valueOf(totalDelayTime / (double)FreezeTimes));
+        double averageDelayTime = totalDelayTime / (double)FreezeTimes;
+        data.put("Average_delay_time", String.valueOf(averageDelayTime));
         double order_cycle = 0.0;
         for(Car car : CarManager.carMap.values())
         {
@@ -190,7 +200,16 @@ public class DataController extends Controller
         double Average_order_cycle = order_cycle / CarManager.carMap.size();
         data.put("Average_order_cycle", String.valueOf(Average_order_cycle));
 
-        renderJson(JsonKit.toJson(data));
+        // 保存统计数据到数据库
+        String jsonContent = JsonKit.toJson(data);
+        DBManager.saveToSandbox(null, null, null, null,
+                               Ontime_delivery_rate,
+                               totalDelayTime,
+                               averageDelayTime,
+                               Average_order_cycle,
+                               null);
+
+        renderJson(jsonContent);
     }
 
     /**获取系统指标 */
@@ -200,9 +219,16 @@ public class DataController extends Controller
         int carCount = CarManager.carMap.size();
         int demandCount = DBManager.getCount("demand");
         
-        data.put("System_critical_load", String.valueOf(carCount*demandCount/70000.0));
+        double systemCriticalLoad = carCount * demandCount / 70000.0;
+        data.put("System_critical_load", String.valueOf(systemCriticalLoad));
 
-        renderJson(JsonKit.toJson(data));
+        // 保存统计数据到数据库
+        String jsonContent = JsonKit.toJson(data);
+        DBManager.saveToSandbox(null, null, null, null,
+                               null, null, null, null,
+                               systemCriticalLoad);
+
+        renderJson(jsonContent);
     }
     /**
      * 前端尝试获取特定车辆的下一个目的地时调用，是车辆更新的关键函数
