@@ -19,12 +19,12 @@
   <!-- 控制按钮 - 左上 -->
   <div class="control-buttons">
     <button id="toggle-vehicle-panel" class="control-btn vehicle-btn">
-      <span>🚚 车辆列表及指标</span>
+      <span>车辆列表及指标</span>
       <span class="arrow">▼</span>
     </button>
     
     <button id="toggle-system-panel" class="control-btn system-btn">
-      <span>📊 系统指标</span>
+      <span>系统指标</span>
       <span class="arrow">▼</span>
     </button>
   </div>
@@ -32,7 +32,7 @@
   <!-- 车辆指标散点图模块 - 右上 -->
   <div class="scatter-control">
     <button id="toggle-scatter-panel" class="scatter-btn">
-      <span>📈 车辆指标散点图</span>
+      <span>车辆指标散点图</span>
       <span class="arrow">▼</span>
     </button>
   </div>
@@ -40,7 +40,7 @@
   <!-- 服务质量指标模块 - 右上（在散点图下方） -->
   <div class="service-quality-control">
     <button id="toggle-service-quality-panel" class="service-quality-btn">
-      <span>⭐ 服务质量指标</span>
+      <span>服务质量指标</span>
       <span class="arrow">▼</span>
     </button>
   </div>
@@ -203,7 +203,7 @@
     </div>
   </div>
   
-  <!-- 底部按钮 -->
+  底部按钮
   <div class="bottom-buttons">
     <button id="open-comparison" class="bottom-btn comparison-btn">
       <span>📊</span>
@@ -227,9 +227,10 @@
       securityJsCode:"9858defc87670662758db011c95df7ac"
     };
   </script>
-  
+  <!-- 主JavaScript文件 -->
+  <script type="module" src="/javascript/main.js"></script>
+
   <script type="module">
-    // map.html中的JavaScript部分更新
     // 全局变量
     let map;
     let vehicles = [];

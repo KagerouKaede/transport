@@ -186,9 +186,12 @@ public class DataController extends Controller
     public void getServiceQualityMetrics()
     {
         Map<String, String> data = new HashMap<>();
-        double Ontime_delivery_rate = FreezeTimes / (double)(StateChangeTimes/5);
+        if(StateChangeTimes == 0) StateChangeTimes = 1; // 防止除以零
+        double Ontime_delivery_rate = FreezeTimes / ((double)StateChangeTimes/5);
         data.put("Ontime_delivery_rate", String.valueOf(Ontime_delivery_rate));
         data.put("Total_delay_time", String.valueOf(totalDelayTime));
+
+        if(FreezeTimes == 0) FreezeTimes = 1; // 防止除以零
         double averageDelayTime = totalDelayTime / (double)FreezeTimes;
         data.put("Average_delay_time", String.valueOf(averageDelayTime));
         double order_cycle = 0.0;
@@ -196,7 +199,10 @@ public class DataController extends Controller
         {
             order_cycle += car.getStatistics().getAverageOrderCycle();
         }
-        double Average_order_cycle = order_cycle / CarManager.carMap.size();
+        double Average_order_cycle = 0.0;
+        if (CarManager.carMap.size() >0 ) {
+            Average_order_cycle = order_cycle / CarManager.carMap.size();
+        }
         data.put("Average_order_cycle", String.valueOf(Average_order_cycle));
 
         // 保存统计数据到数据库
