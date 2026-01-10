@@ -1,5 +1,5 @@
 // 事件管理器模块
-import { WeatherEffectLayer } from '/weather-layer.js';
+import { WeatherEffectLayer } from '/event/weather-layer.js';
 export class EventManager {
     constructor(map, vehicles, functions) {
         this.map = map;

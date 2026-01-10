@@ -203,13 +203,12 @@
     </div>
   </div>
   
-  底部按钮
   <div class="bottom-buttons">
-    <button id="open-comparison" class="bottom-btn comparison-btn">
-      <span>📊</span>
-      <span>打开对比图</span>
-    </button>
-  </div>
+  <button id="close-transport" class="bottom-btn close-transport-btn">
+    <span class="btn-icon">⏹️</span>
+    <span>结束仿真</span>
+  </button>
+</div>
   
   <!-- 模态框 -->
   <div id="vehicle-modal">
@@ -470,9 +469,60 @@
         });
       }
       
-      // 对比图按钮
-      document.getElementById('open-comparison').addEventListener('click', function() {
-        window.open('comparison.html', '_blank');
+      // 停止仿真按钮
+      document.getElementById('close-transport').addEventListener('click', async function() {
+        // 添加确认对话框
+        const confirmed = confirm('确定要结束仿真吗？这将会停止所有车辆的运行。');
+        
+        if (!confirmed) {
+          return;
+        }
+        
+        // 禁用按钮避免重复点击
+        this.disabled = true;
+        this.innerHTML = '<span class="btn-icon">⏳</span><span>停止中...</span>';
+        
+        try {
+          // 调用停止仿真接口
+          const response = await fetch('/sandbox/stopSimulation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // 停止定时更新
+            if (window.updateInterval) {
+              clearInterval(window.updateInterval);
+            }
+            
+            // 显示成功提示
+            showNotification('仿真已成功停止', 'success');
+            
+            // 更新按钮状态
+            this.innerHTML = '<span class="btn-icon">✅</span><span>已停止</span>';
+            
+            // 更新所有车辆状态为停止
+            updateAllVehiclesToStopped();
+            
+            // 清除地图上的车辆标记
+            clearAllMapMarkers();
+            
+          } else {
+            showNotification('停止仿真失败: ' + result.message, 'error');
+            this.disabled = false;
+            this.innerHTML = '<span class="btn-icon">⏹️</span><span>结束仿真</span>';
+          }
+          
+        } catch (error) {
+          console.error('停止仿真请求失败:', error);
+          showNotification('停止仿真请求失败，请检查网络连接', 'error');
+          this.disabled = false;
+          this.innerHTML = '<span class="btn-icon">⏹️</span><span>结束仿真</span>';
+        }
       });
       
       // 点击地图空白处关闭面板
