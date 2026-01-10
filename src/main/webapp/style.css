@@ -122,6 +122,29 @@ html, body {
     right: 16px;
 }
 
+/* 新增服务质量控制按钮容器 */
+.service-quality-control {
+    position: absolute;
+    top: 76px; /* 在散点图按钮下方 */
+    right: -140px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition-smooth);
+    padding-left: 8px;
+    border-top-left-radius: var(--border-radius-md);
+    border-bottom-left-radius: var(--border-radius-md);
+    background: linear-gradient(90deg, rgba(25, 25, 35, 0.6), rgba(25, 25, 35, 0.85) 10%);
+    backdrop-filter: blur(6px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-right: none;
+}
+
+.service-quality-control:hover {
+    right: 16px;
+}
+
 /* 优化2：简化按钮样式，边框变薄，字体变小 */
 .control-btn {
     padding: 10px 16px;
@@ -161,15 +184,37 @@ html, body {
     backdrop-filter: blur(6px);
 }
 
+/* 新增服务质量按钮样式 */
+.service-quality-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(22, 160, 133, 0.85) 0%, rgba(19, 141, 117, 0.85) 100%);
+    color: white;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    min-width: 150px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(6px);
+}
+
 .control-btn:hover,
-.scatter-btn:hover {
+.scatter-btn:hover,
+.service-quality-btn:hover {
     transform: translateY(-2px);
     box-shadow: var(--hover-shadow);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
 .control-btn .arrow,
-.scatter-btn .arrow {
+.scatter-btn .arrow,
+.service-quality-btn .arrow {
     font-size: 10px;
     transition: var(--transition-smooth);
     font-weight: bold;
@@ -177,7 +222,8 @@ html, body {
 }
 
 .control-btn.active .arrow,
-.scatter-btn.active .arrow {
+.scatter-btn.active .arrow,
+.service-quality-btn.active .arrow {
     transform: rotate(180deg);
     opacity: 1;
 }
@@ -204,7 +250,7 @@ html, body {
     border: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 
-/* 调整三个面板的布局和大小 */
+/* 调整四个面板的布局和大小 */
 #vehicle-panel {
     top: 16px;
     left: 16px;
@@ -231,6 +277,15 @@ html, body {
     max-height: 480px;
 }
 
+/* 新增服务质量面板 */
+#service-quality-panel {
+    top: 76px;
+    right: 16px;
+    width: 340px;
+    height: 400px;
+    max-height: 400px;
+}
+
 /* 优化4：减小面板标题区域高度 */
 .panel-header {
     background: linear-gradient(135deg, rgba(52, 152, 219, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%);
@@ -253,6 +308,11 @@ html, body {
 
 .scatter-panel .panel-header {
     background: linear-gradient(135deg, rgba(241, 196, 15, 0.9) 0%, rgba(243, 156, 18, 0.9) 100%);
+}
+
+/* 新增服务质量面板标题样式 */
+.service-quality-panel .panel-header {
+    background: linear-gradient(135deg, rgba(22, 160, 133, 0.9) 0%, rgba(19, 141, 117, 0.9) 100%);
 }
 
 .panel-title {
@@ -519,6 +579,7 @@ html, body {
     transition: var(--transition-smooth);
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .metric-card::before {
@@ -658,7 +719,7 @@ html, body {
     border: 0.5px solid rgba(255, 255, 255, 0.08);
     margin-top: 12px;
     height: 250px;
-    display: none;
+    display: block;
     transition: var(--transition-smooth);
 }
 
@@ -836,7 +897,8 @@ html, body {
         max-height: 420px;
     }
     
-    #system-panel {
+    #system-panel,
+    #service-quality-panel {
         height: 350px;
         max-height: 350px;
     }
@@ -852,12 +914,17 @@ html, body {
     #scatter-chart-container {
         height: 280px;
     }
+    
+    .service-quality-control {
+        top: 66px;
+    }
 }
 
 @media (max-width: 1400px) {
     #vehicle-panel,
     #scatter-panel,
-    #system-panel {
+    #system-panel,
+    #service-quality-panel {
         width: 320px;
     }
     
@@ -869,7 +936,8 @@ html, body {
 @media (max-width: 1200px) {
     #vehicle-panel,
     #scatter-panel,
-    #system-panel {
+    #system-panel,
+    #service-quality-panel {
         width: 300px;
     }
     
