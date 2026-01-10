@@ -157,7 +157,7 @@ public class DBManager
                     element.put("load", record.get("load"));
                     element.put("volume", record.get("volume"));
                     element.put("currState", record.get("currState"));
-                    element.put("preState", record.get("preState"));
+                    element.put("prevState", record.get("prevState"));
                     element.put("waitingTime", record.get("waitingTime"));
                     element.put("emptyDistance", record.get("emptyDistance"));
                     element.put("wastedLoad", record.get("wastedLoad"));
@@ -297,20 +297,100 @@ public class DBManager
     {
         try
         {
-            int line = 0;
-            if (getCount("car") > 0)
+            List<String> uuidInDB = new ArrayList<>();
+            String selectSql = "SELECT UUID FROM car WHERE sandbox_UUID = ?";
+            for (Record record : Db.find(selectSql, ConfigLoader.getConfigUUID()))
             {
-                // TODO: 数据库中有数据记录，Db.update
-                line += 0;
-            }
-            else
-            {
-                // TODO: 数据库中无数据记录，Db.save
-                line += 0;
+                uuidInDB.add(record.getStr("UUID"));
             }
 
-            logger.info("Car map saved to SQL (total {} records)", line);
-            return line;
+            int addLine = 0;
+            int updateLine = 0;
+
+            for (Map.Entry<String, Car> entry : carMap.entrySet())
+            {
+                String uuid = entry.getKey();
+                Car car = entry.getValue();
+
+                if (!uuidInDB.contains(uuid))
+                {
+                    Record carRecord = new Record();
+                    carRecord.set("UUID", car.getUUID())
+                             .set("sandbox_UUID", ConfigLoader.getConfigUUID())
+                             .set("maxload", car.getMaxLoad())
+                             .set("maxvolume", car.getMaxVolume());
+
+                    if (car.getPosition() != null)
+                    {
+                        carRecord.set("location_lat", car.getPosition().lat)
+                                 .set("location_lon", car.getPosition().lon);
+                    }
+
+                    carRecord.set("load", car.getLoad())
+                             .set("volume", car.getVolume())
+                             .set("currState", car.getState() != null ? car.getState().toString() : null)
+                             .set("prevState", car.getPrevState() != null ? car.getPrevState().toString() : null);
+
+                    if (car.getStatistics() != null)
+                    {
+                        carRecord.set("waitingTime", car.getStatistics().getWaitingTime())
+                                 .set("emptyDistance", car.getStatistics().getEmptyDistance())
+                                 .set("wastedLoad", car.getStatistics().getWastedLoad())
+                                 .set("totalWeight", car.getStatistics().getTotalWeight())
+                                 .set("carbonEmission", car.getStatistics().getCarbonEmission())
+                                 .set("totalDistance", car.getStatistics().getTotalDistance())
+                                 .set("completedOrders", car.getStatistics().getCompletedOrders())
+                                 .set("averageOrderCycle", car.getStatistics().getAverageOrderCycle());
+                    }
+
+                    addLine += Db.save("car", carRecord) ? 1 : 0;
+                }
+                else
+                {
+                    String updateSql = "UPDATE car SET location_lat = ?, location_lon = ?, load = ?, volume = ?, currState = ?, prevState = ?, waitingTime = ?, emptyDistance = ?, wastedLoad = ?, totalWeight = ?, carbonEmission = ?, totalDistance = ?, completedOrders = ?, averageOrderCycle = ? WHERE UUID = ? AND sandbox_UUID = ?";
+
+                    Object lat = car.getPosition() != null ? car.getPosition().lat : null;
+                    Object lon = car.getPosition() != null ? car.getPosition().lon : null;
+
+                    // Use safe access for statistics
+                    Object waitingTime = null, emptyDistance = null, wastedLoad = null, totalWeight = null, carbonEmission = null, totalDistance = null, completedOrders = null, averageOrderCycle = null;
+                    if (car.getStatistics() != null)
+                    {
+                        waitingTime = car.getStatistics().getWaitingTime();
+                        emptyDistance = car.getStatistics().getEmptyDistance();
+                        wastedLoad = car.getStatistics().getWastedLoad();
+                        totalWeight = car.getStatistics().getTotalWeight();
+                        carbonEmission = car.getStatistics().getCarbonEmission();
+                        totalDistance = car.getStatistics().getTotalDistance();
+                        completedOrders = car.getStatistics().getCompletedOrders();
+                        averageOrderCycle = car.getStatistics().getAverageOrderCycle();
+                    }
+
+                    int rows = Db.update(updateSql,
+                                         lat,
+                                         lon,
+                                         car.getLoad(),
+                                         car.getVolume(),
+                                         car.getState() != null ? car.getState().toString() : null,
+                                         car.getPrevState() != null ? car.getPrevState().toString() : null,
+                                         waitingTime,
+                                         emptyDistance,
+                                         wastedLoad,
+                                         totalWeight,
+                                         carbonEmission,
+                                         totalDistance,
+                                         completedOrders,
+                                         averageOrderCycle,
+                                         car.getUUID(),
+                                         ConfigLoader.getConfigUUID());
+
+                    updateLine += rows;
+                    uuidInDB.remove(uuid);
+                }
+            }
+
+            logger.info("Car map saved to SQL (inserted {} records, updated {} records)", addLine, updateLine);
+            return addLine + updateLine;
         }
         catch (Exception e)
         {
@@ -323,20 +403,40 @@ public class DBManager
     {
         try
         {
-            int line = 0;
-            if (getCount("poi_stock") > 0)
+            List<String> uuidInDB = new ArrayList<>();
+            String selectSql = "SELECT poi_UUID FROM poi_stock WHERE sandbox_UUID = ?";
+            for (Record record : Db.find(selectSql, ConfigLoader.getConfigUUID()))
             {
-                // TODO: 数据库中有数据记录，Db.update
-                line += 0;
-            }
-            else
-            {
-                // TODO: 数据库中无数据记录，Db.save
-                line += 0;
+                uuidInDB.add(record.getStr("poi_UUID"));
             }
 
-            logger.info("POI stock saved to SQL (total {} records)", line);
-            return line;
+            int addLine = 0;
+            int updateLine = 0;
+
+            for (Map.Entry<String, Poi> entry : PoiMap.entrySet())
+            {
+                String uuid = entry.getKey();
+                Poi poi = entry.getValue();
+
+                if (!uuidInDB.contains(uuid))
+                {
+                    Record poiRecord = new Record();
+                    poiRecord.set("poi_UUID", uuid)
+                             .set("sandbox_UUID", ConfigLoader.getConfigUUID())
+                             .set("stock", poi.getStock());
+                    addLine += Db.save("poi_stock", poiRecord) ? 1 : 0;
+                }
+                else
+                {
+                    String updateSql = "UPDATE poi_stock SET stock = ? WHERE poi_UUID = ? AND sandbox_UUID = ?";
+                    int rows = Db.update(updateSql, poi.getStock(), uuid, ConfigLoader.getConfigUUID());
+                    updateLine += rows;
+                    uuidInDB.remove(uuid);
+                }
+            }
+
+            logger.info("POI stock saved to SQL (inserted {} records, updated {} records)", addLine, updateLine);
+            return addLine + updateLine;
         }
         catch (Exception e)
         {
@@ -612,7 +712,7 @@ public class DBManager
     @Deprecated
     public static void updateCarState(Car car)
     {
-        String sql = "UPDATE car SET state = ?, prestate = ? WHERE UUID = ?";
+        String sql = "UPDATE car SET state = ?, prevState = ? WHERE UUID = ?";
         Db.update(sql, car.getState().toString(), car.getPrevState().toString(), car.getUUID().toString());
     }
 

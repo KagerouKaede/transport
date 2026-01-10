@@ -11,7 +11,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.jfinal.core.Controller;
-import com.jfinal.kit.JsonKit;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tsAdmin.common.PathNode;
 import com.tsAdmin.control.manager.CarManager;
 import com.tsAdmin.model.Car;
@@ -28,6 +29,12 @@ public class DataController extends Controller
     double totalDelayTime = 0;
     int totalDelaytTime = 0;
     private static final Logger logger = LogManager.getLogger(DataController.class);
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
+    private void reply(boolean success, String message)
+    {
+        renderJson(Map.of("success", success, "message", message));
+    }
 
     /**
      * 获取所有兴趣点数据
@@ -37,7 +44,12 @@ public class DataController extends Controller
     public void getPoiData()
     {
         List<Map<String, Object>> dataList = DBManager.getPoiList();
-        renderJson(JsonKit.toJson(dataList));
+        try {
+            renderJson(JSON_MAPPER.writeValueAsString(dataList));
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize poi data to JSON", e);
+            renderJson("{}");
+        }
     }
 
     /**
@@ -47,7 +59,12 @@ public class DataController extends Controller
     public void getCarData()
     {
         List<Map<String, Object>> posList = DBManager.getCarList();
-        renderJson(JsonKit.toJson(posList));
+        try {
+            renderJson(JSON_MAPPER.writeValueAsString(posList));
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize car data to JSON", e);
+            renderJson("{}");
+        }
     }
 
     /**
@@ -87,7 +104,6 @@ public class DataController extends Controller
     //     // 5. 返回成功
     //     renderJson(Map.of("code", 200, "msg", "Pareto 解已更新"));
     // }
-
     /**
      * 获取每辆车的仪表盘数据
      */
@@ -131,7 +147,12 @@ public class DataController extends Controller
         DBManager.saveStatisticsToCarDB(car);
         //Map<Double,List<Map<String,String>>> finaldata = new HashMap<>();
         //finaldata.put(cycleCost, carData);
-        renderJson(JsonKit.toJson(data));
+        try {
+            reply(true, JSON_MAPPER.writeValueAsString(data));
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize dashboard data to JSON", e);
+            reply(false, "Failed to serialize dashboard data to JSON");
+        }
     }
 
     /**
@@ -170,14 +191,20 @@ public class DataController extends Controller
         data.put("Capacity_utilization_rate_variance", String.valueOf(capacityVariance));
         
         // 保存统计数据到数据库
-        String jsonContent = JsonKit.toJson(data);
+        String jsonContent;
+        try {
+            jsonContent = JSON_MAPPER.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize all cars statistics to JSON", e);
+            reply(false, "Failed to serialize all cars statistics to JSON");
+            return;
+        }
         DBManager.saveToSandbox(loadMean,
                                loadVariance,
                                capacityMean,
                                capacityVariance,
                                null, null, null, null, null);
-        
-        renderJson(jsonContent);
+        reply(true, jsonContent);
     }
 
     /**获取服务质量指标 */
@@ -204,15 +231,21 @@ public class DataController extends Controller
         data.put("Average_order_cycle", String.valueOf(Average_order_cycle));
 
         // 保存统计数据到数据库
-        String jsonContent = JsonKit.toJson(data);
+        String jsonContent;
+        try {
+            jsonContent = JSON_MAPPER.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize service quality metrics to JSON", e);
+            reply(false, "Failed to serialize service quality metrics to JSON");
+            return;
+        }
         DBManager.saveToSandbox(null, null, null, null,
                                Ontime_delivery_rate,
                                totalDelayTime,
                                averageDelayTime,
                                Average_order_cycle,
                                null);
-
-        renderJson(jsonContent);
+        reply(true, jsonContent);
     }
 
     /**获取系统指标 */
@@ -226,12 +259,18 @@ public class DataController extends Controller
         data.put("System_critical_load", String.valueOf(systemCriticalLoad));
 
         // 保存统计数据到数据库
-        String jsonContent = JsonKit.toJson(data);
+        String jsonContent;
+        try {
+            jsonContent = JSON_MAPPER.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize system metrics to JSON", e);
+            reply(false, "Failed to serialize system metrics to JSON");
+            return;
+        }
         DBManager.saveToSandbox(null, null, null, null,
                                null, null, null, null,
                                systemCriticalLoad);
-
-        renderJson(jsonContent);
+        reply(true, jsonContent);
     }
 
     /**
@@ -281,6 +320,11 @@ public class DataController extends Controller
             default:
                 break;
         }
-        renderJson(JsonKit.toJson(dest));
+        try {
+            renderJson(JSON_MAPPER.writeValueAsString(dest));
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize destination to JSON", e);
+            renderJson("{}") ;
+        }
     }
 }

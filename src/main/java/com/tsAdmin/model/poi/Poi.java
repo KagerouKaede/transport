@@ -30,4 +30,5 @@ public abstract class Poi
     public Coordinate getPosition() { return position; }
 
     public void setStock(double stock) { this.stock = stock; }
+    public double getStock() { return stock; }
 }

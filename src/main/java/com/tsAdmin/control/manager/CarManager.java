@@ -66,7 +66,7 @@ public class CarManager
 
                 // 设置车辆状态
                 String currStateStr = data.get("currState") != null ? data.get("currState").toString() : null;
-                String prevStateStr = data.get("preState") != null ? data.get("preState").toString() : null;
+                String prevStateStr = data.get("prevState") != null ? data.get("prevState").toString() : null;
                 
                 if (currStateStr != null)
                 {
