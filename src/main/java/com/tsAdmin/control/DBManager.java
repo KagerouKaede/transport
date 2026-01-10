@@ -403,6 +403,189 @@ public class DBManager
         }
     }
 
+    public static boolean saveStatisticsToCarDB(Car car)
+    {
+        try
+        {
+            String sql = "UPDATE car SET location_lat = ?, location_lon = ?,load = ?,currState = ?, prevState = ?, waitingTime = ?, emptyDistance = ?, wastedLoad = ?, totalWeight = ?, carbonEmission = ?, totalDistance = ?, completedOrders = ?, averageOrderCycle = ? WHERE UUID = ? AND sandbox_UUID = ?";
+            int rowsAffected = Db.update(sql,
+                car.getPosition().lat,
+                car.getPosition().lon,
+                car.getLoad(),
+                car.getState().toString(),
+                car.getPrevState().toString(),
+                car.getStatistics().getWaitingTime(),
+                car.getStatistics().getEmptyDistance(),
+                car.getStatistics().getWastedLoad(),
+                car.getStatistics().getTotalWeight(),
+                car.getStatistics().getCarbonEmission(),
+                car.getStatistics().getTotalDistance(),
+                car.getStatistics().getCompletedOrders(),
+                car.getStatistics().getAverageOrderCycle(),
+                car.getUUID(),
+                ConfigLoader.getConfigUUID()
+            );
+            logger.debug("Updated car statistics for UUID: {}, rows affected: {}", car.getUUID(), rowsAffected);
+            return rowsAffected > 0;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save statistics to car DB for UUID: {}", car.getUUID(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存数据到 sandbox 表
+     * 使用 ConfigLoader.getConfigUUID() 作为 UUID，如果记录存在则更新，不存在则插入
+     */
+    public static boolean saveToSandbox(Double loadUtilizationRateMean,
+                                       Double loadUtilizationRateVariance,
+                                       Double capacityUtilizationRateMean,
+                                       Double capacityUtilizationRateVariance,
+                                       Double ontimeDeliveryRate,
+                                       Double totalDelayTime,
+                                       Double averageDelayTime,
+                                       Double averageOrderCycle,
+                                       Double systemCriticalLoad)
+    {
+        try
+        {
+            String uuid = ConfigLoader.getConfigUUID();
+            
+            // 先查询是否存在该 UUID 的记录
+            String selectSql = "SELECT UUID FROM sandbox WHERE UUID = ? LIMIT 1";
+            Record existingRecord = Db.findFirst(selectSql, uuid);
+            
+            if (existingRecord != null)
+            {
+                // 记录存在，执行更新操作
+                StringBuilder updateSql = new StringBuilder("UPDATE sandbox SET ");
+                List<Object> params = new ArrayList<>();
+                boolean hasUpdate = false;
+                                
+                if (loadUtilizationRateMean != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("load_utilization_rate_mean = ?");
+                    params.add(loadUtilizationRateMean);
+                    hasUpdate = true;
+                }
+                
+                if (loadUtilizationRateVariance != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("load_utilization_rate_variance = ?");
+                    params.add(loadUtilizationRateVariance);
+                    hasUpdate = true;
+                }
+                
+                if (capacityUtilizationRateMean != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("capacity_utilization_rate_mean = ?");
+                    params.add(capacityUtilizationRateMean);
+                    hasUpdate = true;
+                }
+                
+                if (capacityUtilizationRateVariance != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("capacity_utilization_rate_variance = ?");
+                    params.add(capacityUtilizationRateVariance);
+                    hasUpdate = true;
+                }
+                
+                if (ontimeDeliveryRate != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("ontime_delivery_rate = ?");
+                    params.add(ontimeDeliveryRate);
+                    hasUpdate = true;
+                }
+                
+                if (totalDelayTime != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("total_delay_time = ?");
+                    params.add(totalDelayTime);
+                    hasUpdate = true;
+                }
+                
+                if (averageDelayTime != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("average_delay_time = ?");
+                    params.add(averageDelayTime);
+                    hasUpdate = true;
+                }
+                
+                if (averageOrderCycle != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("average_order_cycle = ?");
+                    params.add(averageOrderCycle);
+                    hasUpdate = true;
+                }
+                
+                if (systemCriticalLoad != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("system_critical_load = ?");
+                    params.add(systemCriticalLoad);
+                    hasUpdate = true;
+                }
+                
+                if (!hasUpdate)
+                {
+                    logger.debug("No fields to update for sandbox UUID: {}", uuid);
+                    return true;
+                }
+                
+                updateSql.append(" WHERE UUID = ?");
+                params.add(uuid);
+                
+                int rowsAffected = Db.update(updateSql.toString(), params.toArray());
+                logger.debug("Updated sandbox table, UUID: {}, rows affected: {}", uuid, rowsAffected);
+                return rowsAffected > 0;
+            }
+            else
+            {
+                // 记录不存在，执行插入操作
+                Record sandboxRecord = new Record();
+                sandboxRecord.set("UUID", uuid);
+                
+                if (loadUtilizationRateMean != null)
+                    sandboxRecord.set("load_utilization_rate_mean", loadUtilizationRateMean);
+                if (loadUtilizationRateVariance != null)
+                    sandboxRecord.set("load_utilization_rate_variance", loadUtilizationRateVariance);
+                if (capacityUtilizationRateMean != null)
+                    sandboxRecord.set("capacity_utilization_rate_mean", capacityUtilizationRateMean);
+                if (capacityUtilizationRateVariance != null)
+                    sandboxRecord.set("capacity_utilization_rate_variance", capacityUtilizationRateVariance);
+                if (ontimeDeliveryRate != null)
+                    sandboxRecord.set("ontime_delivery_rate", ontimeDeliveryRate);
+                if (totalDelayTime != null)
+                    sandboxRecord.set("total_delay_time", totalDelayTime);
+                if (averageDelayTime != null)
+                    sandboxRecord.set("average_delay_time", averageDelayTime);
+                if (averageOrderCycle != null)
+                    sandboxRecord.set("average_order_cycle", averageOrderCycle);
+                if (systemCriticalLoad != null)
+                    sandboxRecord.set("system_critical_load", systemCriticalLoad);
+                
+                boolean success = Db.save("sandbox", sandboxRecord);
+                logger.debug("Inserted data to sandbox table, UUID: {}, success: {}", uuid, success);
+                return success;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save data to sandbox table", e);
+            return false;
+        }
+    }
+
     /* ================== 以下内容会导致模拟时无法保证情况相同，暂时废弃 ================== */
 
     @Deprecated

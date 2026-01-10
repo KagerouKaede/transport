@@ -155,6 +155,8 @@ public class Car
                 case UNLOADING:
                     load -= currDemand.getQuantity();
                     volume -= currDemand.getVolume();
+                    statistics.incrementCompletedOrders();
+                    statistics.calculateAverageOrderCycle();
                     DemandManager.removeDemand(currDemand.getUUID());
 
                     if (!nodeList.isEmpty())
@@ -166,6 +168,7 @@ public class Car
                     {
                         nextState = CarState.AVAILABLE;
                         currDemand = null;
+                        statistics.resetCompleteOrderCycle();
                     }
                     break;
 

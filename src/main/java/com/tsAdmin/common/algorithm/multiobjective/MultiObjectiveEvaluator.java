@@ -18,6 +18,16 @@ import com.tsAdmin.model.Car;  // 导入车辆模型类
  */
 public class MultiObjectiveEvaluator
 {
+
+    private boolean[] enabledObjectives = {true, true, true, true, true}; // 默认全开
+        /**
+         * 设置哪些目标被启用（长度必须为5）
+         */
+        public void setEnabledObjectives(boolean[] enabled) {
+            if (enabled != null && enabled.length == 5) {
+                this.enabledObjectives = enabled.clone();
+            }
+        }
     /**
      * 目标类型枚举：为每个目标标记"是否以最小化为目标"
      * 若 isMinimize=false，则表示这是一个最大化指标（例如运量），在比较/归一化时会自动取相反数
@@ -131,7 +141,7 @@ public class MultiObjectiveEvaluator
     }
 
     /**
-     * 路径模拟：统一计算5个优化目标
+     * 路径模拟：统一计算5个优化目标，并统计量
      * 这样所有指标都来自同一次遍历，保证一致性
      */
     private RouteMetrics computeRouteMetrics(Car car, List<PathNode> nodeList) {
@@ -151,6 +161,8 @@ public class MultiObjectiveEvaluator
                 : pathNode.getDemand().getDestination();
 
             double distance = Coordinate.distance(carPosition, target);  // 当前位置到目标点距离
+            
+            metrics.totalDistance += distance;  // 累加总行驶里程
             
             // 计算空驶里程（当前无载货时的行驶距离）
             if (currentLoad <= 1e-6) {
@@ -186,7 +198,7 @@ public class MultiObjectiveEvaluator
     }
 
     /**
-     * 简单的统计结构体，集中存储一次模拟的5个优化指标
+     * 简单的统计结构体，集中存储一次模拟的5个优化指标和其他统计量
      */
     private static class RouteMetrics {
         double waitingTime = 0.0;     // 累计等待时间（装卸耗时）
@@ -194,6 +206,7 @@ public class MultiObjectiveEvaluator
         double loadWaste = 0.0;       // 载重浪费（未利用载重 × 距离）
         double totalTonnage = 0.0;    // 已完成运量
         double carbonEmission = 0.0;  // 碳排放（吨公里 × 因子）
+        double totalDistance = 0.0;   // 行驶总里程
     }
 
     /**
@@ -241,7 +254,28 @@ public class MultiObjectiveEvaluator
      * 便捷方法，直接从Assignment对象中提取车辆和路径节点信息
      */
     public ObjectiveVector evaluateAll(Assignment assignment) {
-        return evaluateAll(assignment.getCar(), assignment.getNodeList());
+         RouteMetrics metrics = computeRouteMetrics(assignment.getCar(), assignment.getNodeList());
+
+    EnumMap<ObjectiveType, Double> values = new EnumMap<>(ObjectiveType.class);
+    ObjectiveType[] types = ObjectiveType.values();
+    double[] rawValues = {
+        metrics.waitingTime,
+        metrics.emptyDistance,
+        metrics.loadWaste,
+        metrics.totalTonnage,
+        metrics.carbonEmission
+    };
+
+    for (int i = 0; i < 5; i++) {
+        if (enabledObjectives[i]) {
+            values.put(types[i], rawValues[i]);
+        } else {
+            // 未启用的目标设为 0，使其不参与支配判断和归一化
+            values.put(types[i], 0.0);
+        }
+    }
+
+    return new ObjectiveVector(values);
     }
 
     // ========== 批量计算（用于多个车辆/分配方案） ==========
@@ -273,4 +307,12 @@ public class MultiObjectiveEvaluator
     public double getHandlingTimePerUnit() { return handlingTimePerUnit; }
     public double getCarbonEmissionFactor() { return carbonEmissionFactor; }
     public double getAverageSpeed() { return averageSpeed; }
+
+    /**
+     * 获取车辆的总行驶里程
+     */
+    public double getTotalDistance(Car car, List<PathNode> nodeList) {
+        RouteMetrics metrics = computeRouteMetrics(car, nodeList);
+        return metrics.totalDistance;
+    }
 }
