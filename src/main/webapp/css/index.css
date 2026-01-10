@@ -1,0 +1,49 @@
+#content-container
+{
+    display: flex;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+#content-container div
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+#favicon
+{
+    display: block;
+    width: 256px;
+    height: 256px;
+}
+
+#title
+{
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.3;
+    letter-spacing: 2px;
+    margin: 20px 0;
+    text-shadow: 0 2px 10px #0003;
+}
+
+#button-link
+{
+    margin: 64px;
+    text-decoration: none;
+}
+
+.rect-button
+{
+    min-width: 280px;
+    min-height: 70px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #2196F3 0%, #5C6BC0 100%);
+    color: white;
+}

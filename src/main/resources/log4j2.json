@@ -44,7 +44,7 @@
       {
         "name": "RollingFile",
         "fileName": "${LOG_DIR}/app.log",
-        "filePattern": "${LOG_DIR}/%d{yyyy-MM-dd}-%i.log.gz",
+        "filePattern": "${LOG_DIR}/%d{yyyy-MM-dd}_%i.log.gz",
         "PatternLayout":
         {
           "pattern": "${LOG_PATTERN}",

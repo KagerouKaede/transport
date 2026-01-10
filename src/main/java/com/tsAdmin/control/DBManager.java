@@ -1,6 +1,7 @@
 package com.tsAdmin.control;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class DBManager
             return 0;
         }
 
-        String sql = "SELECT COUNT(*) AS count WHERE preset_UUID = ? FROM " + tableName;
+        String sql = String.format("SELECT COUNT(*) AS count FROM %s WHERE sandbox_UUID = ?", tableName);
         Record record = Db.findFirst(sql, ConfigLoader.getConfigUUID());
         return record != null ? record.getInt("count") : 0;
     }
@@ -59,7 +60,9 @@ public class DBManager
 
             for (String table : POIs.keySet())
             {
-                String sql = "SELECT location_ID, upstream_suppliers, maxstock, product_type, name, location_lat, location_lon FROM " + table;
+                String sql = table == "poi_resource_plant" ?
+                ("SELECT location_ID, maxstock, product_type, name, location_lat, location_lon FROM " + table) :
+                ("SELECT location_ID, upstream_suppliers, maxstock, product_type, name, location_lat, location_lon FROM " + table);
                 List<Record> rawData = Db.find(sql);
 
                 if (rawData == null || rawData.isEmpty()) break;
@@ -69,7 +72,7 @@ public class DBManager
                     Map<String, Object> element = Map.of(
                         "UUID", record.get("location_ID"),
                         "class", POIs.get(table),
-                        "upstream", record.get("upstream_suppliers"),
+                        "upstream", record.get("upstream_suppliers", ""),
                         "maxstock", record.get("maxstock"),
                         "type", record.get("product_type"),
                         "name", record.get("name"),
@@ -92,7 +95,7 @@ public class DBManager
 
     public static double getStock(String poiUuid)
     {
-        String sql = "SELECT stock FROM poi_stock WHERE preset_UUID = ? AND poi_UUID = ? LIMIT 1";
+        String sql = "SELECT stock FROM poi_stock WHERE sandbox_UUID = ? AND poi_UUID = ? LIMIT 1";
         Record record = Db.findFirst(sql, ConfigLoader.getConfigUUID(), poiUuid);
         return record.getDouble("stock");
     }
@@ -102,7 +105,7 @@ public class DBManager
         try
         {
             List<Map<String, String>> demandList = new ArrayList<>();
-            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand WHERE preset_UUID = ?";
+            String sql = "SELECT UUID, type, quantity, volume, origin_UUID, destination_UUID FROM demand WHERE sandbox_UUID = ?";
             List<Record> rawData = Db.find(sql, ConfigLoader.getConfigUUID());
             
             if (rawData != null && !rawData.isEmpty())
@@ -136,21 +139,34 @@ public class DBManager
         try
         {
             List<Map<String, Object>> carList = new ArrayList<>();
-            String sql = "SELECT UUID, type, maxload, maxvolume, location_lat, location_lon FROM car";
-            List<Record> rawData = Db.find(sql);
+            String sql = "SELECT * FROM car WHERE sandbox_UUID = ?";
+            List<Record> rawData = Db.find(sql, ConfigLoader.getConfigUUID());
 
             if (rawData != null && !rawData.isEmpty())
             {
                 for (Record record : rawData)
                 {
-                    Map<String, Object> element = Map.of(
-                        "UUID", record.get("UUID"),
-                        "type", record.get("type"),
-                        "maxload", record.get("maxload"),
-                        "maxvolume", record.get("maxvolume"),
-                        "lat", record.get("location_lat"),
-                        "lon", record.get("location_lon")
-                    );
+                    Map<String, Object> element = new HashMap<>();
+                    
+                    // 添加所有SQL查询的字段到Map中
+                    element.put("UUID", record.get("UUID"));
+                    element.put("location_lat", record.get("location_lat"));
+                    element.put("location_lon", record.get("location_lon"));
+                    element.put("maxload", record.get("maxload"));
+                    element.put("maxvolume", record.get("maxvolume"));
+                    element.put("load", record.get("load"));
+                    element.put("volume", record.get("volume"));
+                    element.put("currState", record.get("currState"));
+                    element.put("preState", record.get("preState"));
+                    element.put("waitingTime", record.get("waitingTime"));
+                    element.put("emptyDistance", record.get("emptyDistance"));
+                    element.put("wastedLoad", record.get("wastedLoad"));
+                    element.put("totalWeight", record.get("totalWeight"));
+                    element.put("carbonEmission", record.get("carbonEmission"));
+                    element.put("totalDistance", record.get("totalDistance"));
+                    element.put("completedOrders", record.get("completedOrders"));
+                    element.put("averageOrderCycle", record.get("averageOrderCycle"));
+                    
                     carList.add(element);
                 }
             }
@@ -165,12 +181,12 @@ public class DBManager
         }
     }
 
-    public static List<Map<String, String>> getPresetList()
+    public static List<Map<String, String>> getSandboxList()
     {
         try
         {
-            List<Map<String, String>> presetList = new ArrayList<>();
-            String sql = "SELECT UUID, content FROM preset";
+            List<Map<String, String>> sandboxList = new ArrayList<>();
+            String sql = "SELECT UUID, content FROM sandbox";
             List<Record> rawData = Db.find(sql);
 
             if (rawData != null && !rawData.isEmpty())
@@ -181,25 +197,25 @@ public class DBManager
                         "UUID", record.getStr("UUID"),
                         "content", record.getStr("content")
                     );
-                    presetList.add(element);
+                    sandboxList.add(element);
                 }
             }
 
-            logger.info("Got preset list from SQL (total {} records)", presetList.size());
-            return presetList;
+            logger.info("Got sandbox list from SQL (total {} records)", sandboxList.size());
+            return sandboxList;
         }
         catch (Exception e)
         {
-            logger.error("Failed to get preset list from SQL", e);
+            logger.error("Failed to get sandbox list from SQL", e);
             return null;
         }
     }
 
-    public static String getPreset(String uuid)
+    public static String getSandbox(String uuid)
     {
         try
         {
-            String sql = "SELECT content FROM preset WHERE UUID = ? LIMIT 1";
+            String sql = "SELECT content FROM sandbox WHERE UUID = ? LIMIT 1";
             Record record = Db.findFirst(sql, uuid);
 
             if (record != null)
@@ -207,18 +223,18 @@ public class DBManager
                 String content = record.getStr("content");
                 int length = content != null ? content.length() : 0;
 
-                logger.info("Got preset(UUID: {}) from SQL, content length: {}", uuid, length);
+                logger.info("Got sandbox(UUID: {}) from SQL, content length: {}", uuid, length);
                 return content;
             }
             else
             {
-                logger.warn("Preset(UUID: {}) not found, null returned", uuid);
+                logger.warn("Sandbox(UUID: {}) not found, null returned", uuid);
                 return null;
             }
         }
         catch (Exception e)
         {
-            logger.error("Failed to get preset(UUID: {}) from SQL", uuid, e);
+            logger.error("Failed to get sandbox(UUID: {}) from SQL", uuid, e);
             return null;
         }
     }
@@ -228,7 +244,7 @@ public class DBManager
         try
         {
             List<String> uuidInDB = new ArrayList<>();
-            String selectSql = "SELECT UUID FROM demand WHERE preset_UUID = ?";
+            String selectSql = "SELECT UUID FROM demand WHERE sandbox_UUID = ?";
             for (Record record : Db.find(selectSql, ConfigLoader.getConfigUUID()))
             {
                 uuidInDB.add(record.getStr("UUID"));
@@ -243,7 +259,7 @@ public class DBManager
                     Demand demand = demandMap.get(uuid);
                     Record demandRecord = new Record();
                     demandRecord.set("UUID", demand.getUUID())
-                                .set("preset_UUID", ConfigLoader.getConfigUUID())
+                                .set("sandbox_UUID", ConfigLoader.getConfigUUID())
                                 .set("type", demand.getType().name())
                                 .set("quantity",demand.getQuantity())
                                 .set("volume", demand.getVolume())
@@ -348,13 +364,13 @@ public class DBManager
     }
 
     /**
-     * 保存预设到数据库
-     * @param isNew 是否为新预设
-     * @param uuid 将保存预设的 UUID
-     * @param content 预设内容，格式同resources/config.json
+     * 保存沙箱到数据库
+     * @param isNew 是否为新沙箱
+     * @param uuid 将保存沙箱的 UUID
+     * @param content 沙箱内容，格式同resources/config.json
      * @return 此次保存操作成功与否
      */
-    public static boolean savePreset(boolean isNew, String uuid, String content)
+    public static boolean saveSandbox(boolean isNew, String uuid, String content)
     {
         try
         {
@@ -362,44 +378,227 @@ public class DBManager
 
             if (isNew)
             {
-                Record presetRecord = new Record();
-                presetRecord.set("UUID", uuid)
+                Record sandboxRecord = new Record();
+                sandboxRecord.set("UUID", uuid)
                             .set("content", content);
-                success = Db.save("preset", presetRecord);
+                success = Db.save("sandbox", sandboxRecord);
             }
             else
             {
-                String updateSql = "UPDATE preset SET content = ? WHERE UUID = ?";
+                String updateSql = "UPDATE sandbox SET content = ? WHERE UUID = ?";
                 success = Db.update(updateSql, content, uuid) > 0;
             }
 
-            logger.debug("Saved preset(UUID: {}), success status: {}", uuid, success);
+            logger.debug("Saved sandbox(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to save preset(UUID: {})", uuid, e);
+            logger.error("Failed to save sandbox(UUID: {})", uuid, e);
             return false;
         }
     }
 
-    public static boolean rmvPreset(String uuid)
+    public static boolean removeSandbox(String uuid)
     {
         try
         {
             boolean success = false;
-            String sql = "DELETE FROM preset WHERE UUID = ?";
+            String sql = "DELETE FROM sandbox WHERE UUID = ?";
             success = Db.delete(sql, uuid) > 0;
 
-            logger.debug("Removed preset(UUID: {}), success status: {}", uuid, success);
+            logger.debug("Removed sandbox(UUID: {}), success status: {}", uuid, success);
             return success;
         }
         catch (Exception e)
         {
-            logger.error("Failed to remove preset(UUID: {})", uuid, e);
+            logger.error("Failed to remove sandbox(UUID: {})", uuid, e);
             return false;
         }
     }
+
+    public static boolean saveStatisticsToCarDB(Car car)
+    {
+        try
+        {
+            String sql = "UPDATE car SET location_lat = ?, location_lon = ?,load = ?,currState = ?, prevState = ?, waitingTime = ?, emptyDistance = ?, wastedLoad = ?, totalWeight = ?, carbonEmission = ?, totalDistance = ?, completedOrders = ?, averageOrderCycle = ? WHERE UUID = ? AND sandbox_UUID = ?";
+            int rowsAffected = Db.update(sql,
+                car.getPosition().lat,
+                car.getPosition().lon,
+                car.getLoad(),
+                car.getState().toString(),
+                car.getPrevState().toString(),
+                car.getStatistics().getWaitingTime(),
+                car.getStatistics().getEmptyDistance(),
+                car.getStatistics().getWastedLoad(),
+                car.getStatistics().getTotalWeight(),
+                car.getStatistics().getCarbonEmission(),
+                car.getStatistics().getTotalDistance(),
+                car.getStatistics().getCompletedOrders(),
+                car.getStatistics().getAverageOrderCycle(),
+                car.getUUID(),
+                ConfigLoader.getConfigUUID()
+            );
+            logger.debug("Updated car statistics for UUID: {}, rows affected: {}", car.getUUID(), rowsAffected);
+            return rowsAffected > 0;
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save statistics to car DB for UUID: {}", car.getUUID(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存数据到 sandbox 表
+     * 使用 ConfigLoader.getConfigUUID() 作为 UUID，如果记录存在则更新，不存在则插入
+     */
+    public static boolean saveToSandbox(Double loadUtilizationRateMean,
+                                       Double loadUtilizationRateVariance,
+                                       Double capacityUtilizationRateMean,
+                                       Double capacityUtilizationRateVariance,
+                                       Double ontimeDeliveryRate,
+                                       Double totalDelayTime,
+                                       Double averageDelayTime,
+                                       Double averageOrderCycle,
+                                       Double systemCriticalLoad)
+    {
+        try
+        {
+            String uuid = ConfigLoader.getConfigUUID();
+
+            // 先查询是否存在该 UUID 的记录
+            String selectSql = "SELECT UUID FROM sandbox WHERE UUID = ? LIMIT 1";
+            Record existingRecord = Db.findFirst(selectSql, uuid);
+            
+            if (existingRecord != null)
+            {
+                // 记录存在，执行更新操作
+                StringBuilder updateSql = new StringBuilder("UPDATE sandbox SET ");
+                List<Object> params = new ArrayList<>();
+                boolean hasUpdate = false;
+                                
+                if (loadUtilizationRateMean != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("load_utilization_rate_mean = ?");
+                    params.add(loadUtilizationRateMean);
+                    hasUpdate = true;
+                }
+                
+                if (loadUtilizationRateVariance != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("load_utilization_rate_variance = ?");
+                    params.add(loadUtilizationRateVariance);
+                    hasUpdate = true;
+                }
+                
+                if (capacityUtilizationRateMean != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("capacity_utilization_rate_mean = ?");
+                    params.add(capacityUtilizationRateMean);
+                    hasUpdate = true;
+                }
+                
+                if (capacityUtilizationRateVariance != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("capacity_utilization_rate_variance = ?");
+                    params.add(capacityUtilizationRateVariance);
+                    hasUpdate = true;
+                }
+                
+                if (ontimeDeliveryRate != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("ontime_delivery_rate = ?");
+                    params.add(ontimeDeliveryRate);
+                    hasUpdate = true;
+                }
+                
+                if (totalDelayTime != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("total_delay_time = ?");
+                    params.add(totalDelayTime);
+                    hasUpdate = true;
+                }
+                
+                if (averageDelayTime != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("average_delay_time = ?");
+                    params.add(averageDelayTime);
+                    hasUpdate = true;
+                }
+                
+                if (averageOrderCycle != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("average_order_cycle = ?");
+                    params.add(averageOrderCycle);
+                    hasUpdate = true;
+                }
+                
+                if (systemCriticalLoad != null)
+                {
+                    if (hasUpdate) updateSql.append(", ");
+                    updateSql.append("system_critical_load = ?");
+                    params.add(systemCriticalLoad);
+                    hasUpdate = true;
+                }
+                
+                if (!hasUpdate)
+                {
+                    logger.debug("No fields to update for sandbox UUID: {}", uuid);
+                    return true;
+                }
+                
+                updateSql.append(" WHERE UUID = ?");
+                params.add(uuid);
+                
+                int rowsAffected = Db.update(updateSql.toString(), params.toArray());
+                logger.debug("Updated sandbox table, UUID: {}, rows affected: {}", uuid, rowsAffected);
+                return rowsAffected > 0;
+            }
+            else
+            {
+                // 记录不存在，执行插入操作
+                Record sandboxRecord = new Record();
+                sandboxRecord.set("UUID", uuid);
+                
+                if (loadUtilizationRateMean != null)
+                    sandboxRecord.set("load_utilization_rate_mean", loadUtilizationRateMean);
+                if (loadUtilizationRateVariance != null)
+                    sandboxRecord.set("load_utilization_rate_variance", loadUtilizationRateVariance);
+                if (capacityUtilizationRateMean != null)
+                    sandboxRecord.set("capacity_utilization_rate_mean", capacityUtilizationRateMean);
+                if (capacityUtilizationRateVariance != null)
+                    sandboxRecord.set("capacity_utilization_rate_variance", capacityUtilizationRateVariance);
+                if (ontimeDeliveryRate != null)
+                    sandboxRecord.set("ontime_delivery_rate", ontimeDeliveryRate);
+                if (totalDelayTime != null)
+                    sandboxRecord.set("total_delay_time", totalDelayTime);
+                if (averageDelayTime != null)
+                    sandboxRecord.set("average_delay_time", averageDelayTime);
+                if (averageOrderCycle != null)
+                    sandboxRecord.set("average_order_cycle", averageOrderCycle);
+                if (systemCriticalLoad != null)
+                    sandboxRecord.set("system_critical_load", systemCriticalLoad);
+                
+                boolean success = Db.save("sandbox", sandboxRecord);
+                logger.debug("Inserted data to sandbox table, UUID: {}, success: {}", uuid, success);
+                return success;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to save data to sandbox table", e);
+            return false;
+        }
+    }    
 
     /* ================== 以下内容会导致模拟时无法保证情况相同，暂时废弃 ================== */
 

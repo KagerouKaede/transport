@@ -71,4 +71,5 @@ public class DemandManager
     /** 获取所有订单组成的列表<p><b>对其的修改不会同步到本类内的列表</b> */
     public static List<Demand> getList() { return new ArrayList<>(demandMap.values()); }
     public static void removeDemand(String uuid) { demandMap.remove(uuid); }
+    public static boolean isEmpty() { return demandMap.isEmpty(); }
 }

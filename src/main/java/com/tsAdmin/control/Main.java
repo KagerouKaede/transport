@@ -15,8 +15,10 @@ import com.tsAdmin.control.manager.PoiManager;
 public class Main
 {
     public static Random RANDOM;
-    private static DataUpdater updater = new DataUpdater();
+    private static DataUpdater updater;
     private static Thread updaterThread;
+    private static volatile boolean isRunning = false;
+
     private static final Logger logger = LogManager.getLogger("App");
 
     public static void main(String[] args)
@@ -24,7 +26,7 @@ public class Main
         try
         {
             // 打开浏览器
-            java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
+            // java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
         }
         catch (Exception e)
         {
@@ -38,6 +40,21 @@ public class Main
     public static void start()
     {
         logger.info("Starting simulation...");
+        
+        // 检查是否已有线程在运行，如果有则先停止
+        if (isRunning)
+        {
+            logger.warn("Simulation is already running. Stopping previous instance...");
+            try
+            {
+                stop();
+            }
+            catch (InterruptedException e)
+            {
+                logger.error("Error while stopping previous simulation", e);
+                Thread.currentThread().interrupt();
+            }
+        }
 
         RANDOM = new Random(ConfigLoader.getInt("Main.random_seed"));
 
@@ -45,11 +62,17 @@ public class Main
         CarManager.init();
         DemandManager.init();
 
+        // 创建新的 DataUpdater 实例
+        updater = new DataUpdater();
+        
         // 将 DataUpdater 作为独立线程运行，避免阻塞主线程
         updaterThread = new Thread(updater);
         // 设置为守护线程，主程序结束时自动结束
         updaterThread.setDaemon(true);
         updaterThread.start();
+        
+        // 更新运行状态
+        isRunning = true;
 
         logger.info("Simulation started successfully, preset uuid: {}", ConfigLoader.getConfigUUID());
     }
@@ -58,27 +81,27 @@ public class Main
     {
         logger.info("Stopping simulation...");
 
-        // 停止 DataUpdater 线程
         if (updater != null)
         {
             updater.stop();
         }
 
-        // 等待线程结束（最多等待5秒）
         if (updaterThread != null && updaterThread.isAlive())
         {
             updaterThread.join(5000);
             if (updaterThread.isAlive())
             {
                 logger.warn("DataUpdater thread did not stop within timeout");
+                // 强制中断线程
+                updaterThread.interrupt();
             }
         }
-        
-        // 保存各个 Manager 的数据
+
         PoiManager.onStop();
         CarManager.onStop();
         DemandManager.onStop();
-        
+        isRunning = false;
+
         logger.info("Simulation stopped successfully");
     }
 }

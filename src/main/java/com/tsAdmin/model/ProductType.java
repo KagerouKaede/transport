@@ -17,8 +17,8 @@ public enum ProductType
         params.put("name", new String[] {"木材", "钢材", "药材"});
         params.put("minQuantity", new Integer[] {10, 20, 5});        // t
         params.put("maxQuantity", new Integer[] {40, 50, 20});       // t
-        params.put("minDensity", new Integer[] {300, 8000, 700});    // kg/m^3
-        params.put("maxDensity", new Integer[] {1200, 7000, 1000});  // kg/m^3
+        params.put("minDensity", new Integer[] {300, 7000, 700});    // kg/m^3
+        params.put("maxDensity", new Integer[] {1200, 8000, 1000});  // kg/m^3
     }
 
     private final int index;

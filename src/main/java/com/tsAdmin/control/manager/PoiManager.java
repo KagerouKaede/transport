@@ -1,4 +1,5 @@
 package com.tsAdmin.control.manager;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class PoiManager
         poiList.clear();
 
         ResourcePlant.setStockGrowthRate(ConfigLoader.getInt("ResourcePlant.stock_growth_rate"));
-        ProcessPlant.setProcessingLoss(ConfigLoader.getInt("ProcessingPlant.processing_loss"));
+        ProcessPlant.setProcessingLoss(ConfigLoader.getInt("ProcessPlant.processing_loss"));
         ProcessPlant.setProcessingSpeed(ConfigLoader.getInt("ProcessPlant.processing_speed"));
         Purchaser.setPurchaseThreshold(ConfigLoader.getInt("Purchaser.purchase_threshold"));
         Market.setSalesRate(ConfigLoader.getInt("Market.sales_rate"));
@@ -41,7 +42,7 @@ public class PoiManager
                 (double)data.get("lat"),
                 (double)data.get("lon")
             );
-            int maxStock = (int)data.get("maxStock");
+            int maxStock = (int)data.get("maxstock");
 
             Poi toAdd = switch ((String)data.get("class"))
             {
@@ -92,10 +93,13 @@ public class PoiManager
         {
             DemandManager.resetDemandThisCycle();
 
+            List<String> uuidList = new ArrayList<>(poiList.keySet());
+
             // 操作量不大，使用同步操作更简单
-            for (Poi poi : poiList.values())
+            for (String uuid : uuidList)
             {
-                poi.update();
+                logger.debug("uuid:{}, lat: {}", uuid, poiList.get(uuid).getPosition().lat);
+                poiList.get(uuid).update();
             }
 
             logger.trace("POI updating completed");

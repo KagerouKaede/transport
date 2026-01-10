@@ -11,7 +11,7 @@ public class ProcessPlant extends Purchaser implements Dumper
     private static final Logger logger = LogManager.getLogger(ProcessPlant.class);
 
     private static double PROCESSING_LOSS, PROCESSING_SPEED;
-    private double rawMaterial; // TODO: 没有原材料增加逻辑
+    private double rawMaterial;
 
     public static void setProcessingLoss(int loss) { PROCESSING_LOSS = loss / 100.0; }
     public static void setProcessingSpeed(int speed) { PROCESSING_SPEED = speed / 100.0; }
@@ -39,6 +39,13 @@ public class ProcessPlant extends Purchaser implements Dumper
 
         // 尝试根据库存生成订单
         tryGenerateDemand(stock + rawMaterial * PROCESSING_LOSS);
+    }
+
+    @Override
+    public void onDemandCompleted()
+    {
+        rawMaterial += demand.getQuantity();
+        demand = null;
     }
 
     @Override

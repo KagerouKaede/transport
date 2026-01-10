@@ -47,7 +47,10 @@ export class WeatherEffectLayer
     addWeatherEffect(event) {
         const effectId = event.id;
         
-        switch (event.options.weatherType) {
+        // 调试信息
+        console.log(`添加天气效果: ${event.weatherType}, 事件对象:`, event);
+        
+        switch (event.weatherType) {
             case 'rain':
                 this.addRainEffect(event);
                 break;
@@ -61,20 +64,25 @@ export class WeatherEffectLayer
                 this.addStormEffect(event);
                 break;
             case 'sandstorm':
-                this.addSandstormEffect(event); // 添加沙尘暴
+                this.addSandstormEffect(event);
                 break;
+            default:
+                console.warn(`未知的天气类型: ${event.weatherType}`);
         }
     }
     
     addRainEffect(event) {
         const effectId = event.id;
         const particles = [];
-        const intensity = event.options.intensity || 0.5;
+        // 使用event.intensity而不是event.options.intensity
+        const intensity = event.intensity || 0.5;
         const particleCount = Math.floor(300 * intensity);
         
         // 获取事件中心在画布上的像素坐标
         const pixelPos = this.map.lngLatToContainer(event.position);
         const radiusInPixels = this.metersToPixels(event.radius, event.position[1]);
+        
+        console.log(`添加雨效果: 位置=${pixelPos.x},${pixelPos.y}, 半径=${radiusInPixels}px, 粒子数=${particleCount}`);
         
         // 创建雨滴粒子
         for (let i = 0; i < particleCount; i++) {
@@ -100,6 +108,12 @@ export class WeatherEffectLayer
             position: event.position,
             radius: event.radius,
             intensity,
+            // 添加热力圆环属性
+            heatRing: {
+                pulse: 0,
+                pulseSpeed: 0.5 + Math.random() * 0.5,
+                color: this.getHeatRingColor('rain', intensity)
+            },
             lastUpdate: Date.now()
         });
     }
@@ -107,7 +121,7 @@ export class WeatherEffectLayer
     addSnowEffect(event) {
         const effectId = event.id;
         const particles = [];
-        const intensity = event.options.intensity || 0.5;
+        const intensity = event.intensity || 0.5;
         const particleCount = Math.floor(150 * intensity);
         
         // 获取事件中心在画布上的像素坐标
@@ -139,13 +153,19 @@ export class WeatherEffectLayer
             position: event.position,
             radius: event.radius,
             intensity,
+            // 添加热力圆环属性
+            heatRing: {
+                pulse: 0,
+                pulseSpeed: 0.3 + Math.random() * 0.4,
+                color: this.getHeatRingColor('snow', intensity)
+            },
             lastUpdate: Date.now()
         });
     }
     
     addFogEffect(event) {
         const effectId = event.id;
-        const intensity = event.options.intensity || 0.5;
+        const intensity = event.intensity || 0.5;
         
         this.effects.set(effectId, {
             type: 'fog',
@@ -153,25 +173,41 @@ export class WeatherEffectLayer
             radius: event.radius,
             intensity,
             opacity: 0.1 + intensity * 0.3,
-            density: 20 + intensity * 30
+            density: 20 + intensity * 30,
+            // 添加热力圆环属性
+            heatRing: {
+                pulse: 0,
+                pulseSpeed: 0.2 + Math.random() * 0.3,
+                color: this.getHeatRingColor('fog', intensity)
+            }
         });
     }
     
     addStormEffect(event) {
         const effectId = event.id;
         const particles = [];
-        const intensity = event.options.intensity || 0.5;
+        const intensity = event.intensity || 0.5;
         const particleCount = Math.floor(400 * intensity);
         
-        // 创建暴风雨粒子（更密集的雨滴 + 风效果）
+        // 获取事件中心在画布上的像素坐标
+        const pixelPos = this.map.lngLatToContainer(event.position);
+        const radiusInPixels = this.metersToPixels(event.radius, event.position[1]);
+        
+        // 创建暴风雨粒子
         for (let i = 0; i < particleCount; i++) {
+            // 在圆形区域内随机位置生成粒子
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * radiusInPixels;
+            const x = pixelPos.x + Math.cos(angle) * r;
+            const y = pixelPos.y + Math.sin(angle) * r;
+            
             particles.push({
-                x: Math.random() * this.canvas.width,
-                y: Math.random() * this.canvas.height,
+                x: x,
+                y: y,
                 length: 15 + Math.random() * 15,
                 speed: 20 + Math.random() * 30 * intensity,
                 opacity: 0.4 + Math.random() * 0.3,
-                sway: 2 + Math.random() * 4, // 更强的飘动效果
+                sway: 2 + Math.random() * 4,
                 wind: Math.random() * 10 - 5
             });
         }
@@ -183,6 +219,12 @@ export class WeatherEffectLayer
             radius: event.radius,
             intensity,
             flash: 0,
+            // 添加热力圆环属性
+            heatRing: {
+                pulse: 0,
+                pulseSpeed: 0.8 + Math.random() * 0.7,
+                color: this.getHeatRingColor('storm', intensity)
+            },
             lastUpdate: Date.now()
         });
     }
@@ -190,7 +232,7 @@ export class WeatherEffectLayer
     addSandstormEffect(event) {
         const effectId = event.id;
         const particles = [];
-        const intensity = event.options.intensity || 0.5;
+        const intensity = event.intensity || 0.5;
         const particleCount = Math.floor(400 * intensity);
         
         // 获取事件中心在画布上的像素坐标
@@ -208,14 +250,14 @@ export class WeatherEffectLayer
             particles.push({
                 x: x,
                 y: y,
-                size: 1 + Math.random() * 4,
+                size: 0.5 + Math.random() * 2,
                 speed: 3 + Math.random() * 10 * intensity,
                 opacity: 0.4 + Math.random() * 0.4,
                 sway: Math.random() * 3 - 1.5,
                 rotation: Math.random() * Math.PI * 2,
                 color: `rgba(${Math.floor(200 + Math.random() * 55)}, 
                             ${Math.floor(150 + Math.random() * 105)}, 
-                            ${Math.floor(50 + Math.random() * 50)}, `
+                            ${Math.floor(50 + Math.random() * 50)}, 0.8)`
             });
         }
         
@@ -225,11 +267,18 @@ export class WeatherEffectLayer
             position: event.position,
             radius: event.radius,
             intensity,
+            // 添加热力圆环属性
+            heatRing: {
+                pulse: 0,
+                pulseSpeed: 0.6 + Math.random() * 0.5,
+                color: this.getHeatRingColor('sandstorm', intensity)
+            },
             lastUpdate: Date.now()
         });
     }
 
-    updateParticles(effectId, effect) {
+    updateParticles(effectId, effect) 
+    {
         const now = Date.now();
         const deltaTime = (now - effect.lastUpdate) / 1000;
         
@@ -237,19 +286,27 @@ export class WeatherEffectLayer
         const pixelPos = this.map.lngLatToContainer(effect.position);
         const radiusInPixels = this.metersToPixels(effect.radius, effect.position[1]);
         
+        // 更新热力圆环脉冲
+        if (effect.heatRing) {
+            effect.heatRing.pulse += effect.heatRing.pulseSpeed * deltaTime;
+            if (effect.heatRing.pulse > Math.PI * 2) {
+                effect.heatRing.pulse -= Math.PI * 2;
+            }
+        }
+        
         switch (effect.type) {
             case 'rain':
                 this.updateRainParticles(effect, deltaTime, pixelPos, radiusInPixels);
                 break;
-                
             case 'snow':
                 this.updateSnowParticles(effect, deltaTime, pixelPos, radiusInPixels);
                 break;
-                
             case 'storm':
                 this.updateStormParticles(effect, deltaTime, pixelPos, radiusInPixels);
                 break;
-                
+            case 'sandstorm':
+                this.updateSandstormParticles(effect, deltaTime, pixelPos, radiusInPixels);
+                break;
             // 雾效果不需要更新粒子
         }
         
@@ -258,21 +315,18 @@ export class WeatherEffectLayer
     
     updateRainParticles(effect, deltaTime, pixelPos, radiusInPixels) {
         effect.particles.forEach(p => {
-            // 斜向下移动
             p.y += p.speed * deltaTime * 60;
-            p.x -= 2 * deltaTime * 30; // 向左偏移，形成斜向下效果
+            p.x -= 2 * deltaTime * 30;
             
-            // 检查粒子是否移出圆形区域
             const dx = p.x - pixelPos.x;
             const dy = p.y - pixelPos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance > radiusInPixels || p.y > this.canvas.height) {
-                // 在圆形区域内随机重置位置
                 const angle = Math.random() * Math.PI * 2;
                 const r = Math.random() * radiusInPixels;
                 p.x = pixelPos.x + Math.cos(angle) * r;
-                p.y = pixelPos.y + Math.sin(angle) * r - radiusInPixels; // 从上方进入
+                p.y = pixelPos.y + Math.sin(angle) * r - radiusInPixels;
             }
         });
     }
@@ -283,13 +337,11 @@ export class WeatherEffectLayer
             p.x += p.sway * deltaTime * 20;
             p.rotation += deltaTime;
             
-            // 检查粒子是否移出圆形区域
             const dx = p.x - pixelPos.x;
             const dy = p.y - pixelPos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance > radiusInPixels) {
-                // 在圆形区域内随机重置位置
                 const angle = Math.random() * Math.PI * 2;
                 const r = Math.random() * radiusInPixels;
                 p.x = pixelPos.x + Math.cos(angle) * r;
@@ -303,13 +355,11 @@ export class WeatherEffectLayer
             p.y += p.speed * deltaTime * 60;
             p.x += (p.sway + p.wind) * deltaTime * 30;
             
-            // 检查粒子是否移出圆形区域
             const dx = p.x - pixelPos.x;
             const dy = p.y - pixelPos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance > radiusInPixels || p.y > this.canvas.height) {
-                // 在圆形区域内随机重置位置
                 const angle = Math.random() * Math.PI * 2;
                 const r = Math.random() * radiusInPixels;
                 p.x = pixelPos.x + Math.cos(angle) * r;
@@ -317,7 +367,6 @@ export class WeatherEffectLayer
             }
         });
         
-        // 随机闪电效果
         if (Math.random() < 0.001 * effect.intensity) {
             effect.flash = 1;
         } else if (effect.flash > 0) {
@@ -327,18 +376,15 @@ export class WeatherEffectLayer
 
     updateSandstormParticles(effect, deltaTime, pixelPos, radiusInPixels) {
         effect.particles.forEach(p => {
-            // 沙尘暴粒子旋转更快，飘动更随机
             p.y += p.speed * deltaTime * 40;
             p.x += p.sway * deltaTime * 30;
             p.rotation += deltaTime * 2;
             
-            // 检查粒子是否移出圆形区域
             const dx = p.x - pixelPos.x;
             const dy = p.y - pixelPos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance > radiusInPixels) {
-                // 在圆形区域内随机重置位置
                 const angle = Math.random() * Math.PI * 2;
                 const r = Math.random() * radiusInPixels;
                 p.x = pixelPos.x + Math.cos(angle) * r;
@@ -350,24 +396,26 @@ export class WeatherEffectLayer
     render() {
         if (!this.visible || !this.ctx) return;
         
-        // 清空画布
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // 渲染所有效果
         for (const [effectId, effect] of this.effects) {
-            // 将地图坐标转换为屏幕坐标
             const pixelPos = this.map.lngLatToContainer(effect.position);
             const radiusInPixels = this.metersToPixels(effect.radius, effect.position[1]);
+            
+            // 先绘制热力圆环（在裁剪区域外）
+            if (effect.heatRing) {
+                this.renderHeatRing(effect, pixelPos, radiusInPixels);
+            }
             
             // 保存上下文状态
             this.ctx.save();
             
-            // 创建圆形裁剪区域
+            // 创建圆形裁剪区域（只影响内部粒子）
             this.ctx.beginPath();
             this.ctx.arc(pixelPos.x, pixelPos.y, radiusInPixels, 0, Math.PI * 2);
             this.ctx.clip();
             
-            // 更新和渲染粒子，传递像素坐标和半径
+            // 更新和渲染粒子
             this.updateParticles(effectId, effect);
             
             switch (effect.type) {
@@ -383,15 +431,72 @@ export class WeatherEffectLayer
                 case 'storm':
                     this.renderStorm(effect);
                     break;
+                case 'sandstorm':
+                    this.renderSandstorm(effect); 
+                    break;
             }
             
-            // 恢复上下文状态
             this.ctx.restore();
         }
     }
     
+    // 渲染热力圆环
+    renderHeatRing(effect, pixelPos, radiusInPixels) {
+        const ring = effect.heatRing;
+        const pulseValue = Math.sin(ring.pulse) * 0.5 + 0.5; // 0到1的脉冲值
+        
+        // 根据强度调整圆环宽度和透明度
+        const ringWidth = 4 + effect.intensity * 6;
+        const baseOpacity = 0.3 + effect.intensity * 0.3;
+        
+        // 创建径向渐变（空心圆环效果）
+        const gradient = this.ctx.createRadialGradient(
+            pixelPos.x, pixelPos.y, radiusInPixels - ringWidth,
+            pixelPos.x, pixelPos.y, radiusInPixels
+        );
+        
+        // 根据天气类型和强度调整颜色
+        const ringColor = this.getHeatRingColor(effect.type, effect.intensity);
+        
+        // 渐变从透明到颜色再到透明
+        gradient.addColorStop(0, `rgba(${ringColor.r}, ${ringColor.g}, ${ringColor.b}, 0)`);
+        gradient.addColorStop(0.5, `rgba(${ringColor.r}, ${ringColor.g}, ${ringColor.b}, ${baseOpacity * pulseValue})`);
+        gradient.addColorStop(1, `rgba(${ringColor.r}, ${ringColor.g}, ${ringColor.b}, 0)`);
+        
+        // 绘制圆环
+        this.ctx.beginPath();
+        this.ctx.arc(pixelPos.x, pixelPos.y, radiusInPixels - ringWidth/2, 0, Math.PI * 2);
+        this.ctx.strokeStyle = gradient;
+        this.ctx.lineWidth = ringWidth;
+        this.ctx.stroke();
+        
+        // 添加外发光效果
+        this.ctx.beginPath();
+        this.ctx.arc(pixelPos.x, pixelPos.y, radiusInPixels, 0, Math.PI * 2);
+        this.ctx.strokeStyle = `rgba(${ringColor.r}, ${ringColor.g}, ${ringColor.b}, ${0.1 * pulseValue})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+    }
+    
+    // 获取热力圆环颜色
+    getHeatRingColor(weatherType, intensity) {
+        switch(weatherType) {
+            case 'rain':
+                return {r: 100, g: 150, b: 255}; // 蓝色
+            case 'snow':
+                return {r: 240, g: 240, b: 255}; // 淡蓝色/白色
+            case 'fog':
+                return {r: 180, g: 180, b: 180}; // 灰色
+            case 'storm':
+                return {r: 50, g: 80, b: 180}; // 深蓝色
+            case 'sandstorm':
+                return {r: 210, g: 180, b: 100}; // 沙黄色
+            default:
+                return {r: 200, g: 200, b: 200}; // 默认灰色
+        }
+    }
+    
     renderRain(effect, pixelPos, radiusInPixels) {
-    // 渲染雨滴
         this.ctx.strokeStyle = 'rgba(100, 150, 255, 0.6)';
         this.ctx.lineWidth = 1;
         this.ctx.lineCap = 'round';
@@ -399,14 +504,11 @@ export class WeatherEffectLayer
         effect.particles.forEach(p => {
             this.ctx.globalAlpha = p.opacity;
             
-            // 绘制斜向下的雨滴
             this.ctx.beginPath();
             this.ctx.moveTo(p.x, p.y);
-            // 雨滴向下45度角
             this.ctx.lineTo(p.x - 2, p.y + p.length);
             this.ctx.stroke();
             
-            // 添加雨滴末端的小圆点增强效果
             this.ctx.beginPath();
             this.ctx.arc(p.x - 2, p.y + p.length, 0.5, 0, Math.PI * 2);
             this.ctx.fillStyle = 'rgba(100, 150, 255, 0.6)';
@@ -431,7 +533,6 @@ export class WeatherEffectLayer
     }
     
     renderFog(effect) {
-        // 创建雾效果（径向渐变）
         const pixelPos = this.map.lngLatToContainer(effect.position);
         const radiusInPixels = this.metersToPixels(effect.radius, effect.position[1]);
         
@@ -449,10 +550,8 @@ export class WeatherEffectLayer
     }
     
     renderStorm(effect) {
-        // 渲染雨
         this.renderRain(effect);
         
-        // 闪电效果
         if (effect.flash > 0) {
             this.ctx.fillStyle = `rgba(255, 255, 200, ${effect.flash * 0.3})`;
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -466,11 +565,8 @@ export class WeatherEffectLayer
             this.ctx.translate(p.x, p.y);
             this.ctx.rotate(p.rotation);
             
-            // 沙尘暴粒子是棕色的
-            this.ctx.fillStyle = p.color + '0.8)';
+            this.ctx.fillStyle = p.color;
             this.ctx.beginPath();
-            
-            // 绘制椭圆形的沙尘粒子
             this.ctx.ellipse(0, 0, p.size * 1.5, p.size, 0, 0, Math.PI * 2);
             this.ctx.fill();
             
@@ -479,7 +575,6 @@ export class WeatherEffectLayer
     }
     
     metersToPixels(meters, latitude) {
-        // 将米转换为像素（近似）
         const metersPerPixel = 156543.03392 * Math.cos(latitude * Math.PI / 180) / Math.pow(2, this.map.getZoom());
         return meters / metersPerPixel;
     }

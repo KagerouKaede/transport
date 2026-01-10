@@ -1,0 +1,976 @@
+/* 基础样式 */
+.event-info {
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    max-width: 180px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.event-info h4 {
+    margin: 0 0 6px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffcc00;
+    font-size: 12px;
+}
+
+.event-info p {
+    margin: 2px 0;
+    line-height: 1.2;
+}
+
+.event-info strong {
+    color: #4fc3f7;
+}
+
+.amap-info-content {
+    background: transparent !important;
+    border: none !important;
+}
+
+.amap-info-sharp {
+    border-top-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --tertiary-color: #9b59b6;
+    --yellow-color: #f1c40f;
+    --dark-bg: rgba(25, 25, 35, 0.92);
+    --light-bg: rgba(255, 255, 255, 0.92);
+    --card-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    --hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    --border-radius-lg: 12px;
+    --border-radius-md: 8px;
+    --border-radius-sm: 6px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --glass-effect: backdrop-filter: blur(10px);
+    --accent-glow: 0 0 10px rgba(52, 152, 219, 0.2);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    font-size: 13px;
+}
+
+/* 地图容器 - 全屏 */
+#container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    filter: brightness(1.05) contrast(1.05);
+}
+
+/* 优化1：简化控制按钮，边框变薄 */
+.control-buttons {
+    position: absolute;
+    top: 16px;
+    left: -140px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition-smooth);
+    padding-right: 8px;
+    border-top-right-radius: var(--border-radius-md);
+    border-bottom-right-radius: var(--border-radius-md);
+    background: linear-gradient(90deg, rgba(25, 25, 35, 0.85), rgba(25, 25, 35, 0.6) 90%);
+    backdrop-filter: blur(6px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-left: none;
+}
+
+.control-buttons:hover {
+    left: 16px;
+}
+
+.scatter-control {
+    position: absolute;
+    top: 16px;
+    right: -140px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition-smooth);
+    padding-left: 8px;
+    border-top-left-radius: var(--border-radius-md);
+    border-bottom-left-radius: var(--border-radius-md);
+    background: linear-gradient(90deg, rgba(25, 25, 35, 0.6), rgba(25, 25, 35, 0.85) 10%);
+    backdrop-filter: blur(6px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-right: none;
+}
+
+.scatter-control:hover {
+    right: 16px;
+}
+
+/* 新增服务质量控制按钮容器 */
+.service-quality-control {
+    position: absolute;
+    top: 76px; /* 在散点图按钮下方 */
+    right: -140px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: var(--transition-smooth);
+    padding-left: 8px;
+    border-top-left-radius: var(--border-radius-md);
+    border-bottom-left-radius: var(--border-radius-md);
+    background: linear-gradient(90deg, rgba(25, 25, 35, 0.6), rgba(25, 25, 35, 0.85) 10%);
+    backdrop-filter: blur(6px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-right: none;
+}
+
+.service-quality-control:hover {
+    right: 16px;
+}
+
+/* 优化2：简化按钮样式，边框变薄，字体变小 */
+.control-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.85) 0%, rgba(41, 128, 185, 0.85) 100%);
+    color: white;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    min-width: 150px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(6px);
+}
+
+.scatter-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.85) 0%, rgba(243, 156, 18, 0.85) 100%);
+    color: white;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    min-width: 150px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(6px);
+}
+
+/* 新增服务质量按钮样式 */
+.service-quality-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(22, 160, 133, 0.85) 0%, rgba(19, 141, 117, 0.85) 100%);
+    color: white;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    min-width: 150px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(6px);
+}
+
+.control-btn:hover,
+.scatter-btn:hover,
+.service-quality-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn .arrow,
+.scatter-btn .arrow,
+.service-quality-btn .arrow {
+    font-size: 10px;
+    transition: var(--transition-smooth);
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.control-btn.active .arrow,
+.scatter-btn.active .arrow,
+.service-quality-btn.active .arrow {
+    transform: rotate(180deg);
+    opacity: 1;
+}
+
+.control-btn.vehicle-btn {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.85) 0%, rgba(39, 174, 96, 0.85) 100%);
+}
+
+.control-btn.system-btn {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.85) 0%, rgba(142, 68, 173, 0.85) 100%);
+}
+
+/* 优化3：简化浮动面板，边框变薄 */
+.floating-panel {
+    position: absolute;
+    z-index: 1000;
+    background: rgba(25, 25, 35, 0.88);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    transition: var(--transition-smooth);
+    display: none;
+    backdrop-filter: blur(12px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 调整四个面板的布局和大小 */
+#vehicle-panel {
+    top: 16px;
+    left: 16px;
+    width: 340px;
+    height: 480px;
+    max-height: 480px;
+}
+
+/* 系统指标面板移到左侧底部 */
+#system-panel {
+    bottom: 16px;
+    left: 16px;
+    transform: none;
+    width: 340px;
+    height: 400px;
+    max-height: 400px;
+}
+
+#scatter-panel {
+    top: 16px;
+    right: 16px;
+    width: 340px;
+    height: 480px;
+    max-height: 480px;
+}
+
+/* 新增服务质量面板 */
+#service-quality-panel {
+    top: 76px;
+    right: 16px;
+    width: 340px;
+    height: 400px;
+    max-height: 400px;
+}
+
+/* 优化4：减小面板标题区域高度 */
+.panel-header {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%);
+    color: white;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+    min-height: 42px;
+}
+
+.vehicle-panel .panel-header {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.9) 0%, rgba(39, 174, 96, 0.9) 100%);
+}
+
+.system-panel .panel-header {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.9) 0%, rgba(142, 68, 173, 0.9) 100%);
+}
+
+.scatter-panel .panel-header {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.9) 0%, rgba(243, 156, 18, 0.9) 100%);
+}
+
+/* 新增服务质量面板标题样式 */
+.service-quality-panel .panel-header {
+    background: linear-gradient(135deg, rgba(22, 160, 133, 0.9) 0%, rgba(19, 141, 117, 0.9) 100%);
+}
+
+.panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.back-btn, .close-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    min-height: 30px;
+    backdrop-filter: blur(4px);
+}
+
+.back-btn:hover, .close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.03);
+}
+
+.back-btn {
+    display: none;
+}
+
+/* 优化5：优化面板内容区域 */
+.panel-content {
+    padding: 12px;
+    height: calc(100% - 42px);
+    max-height: none;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 152, 219, 0.4) transparent;
+}
+
+.panel-content::-webkit-scrollbar {
+    width: 3px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.6) 0%, rgba(41, 128, 185, 0.6) 100%);
+    border-radius: 8px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.8) 0%, rgba(41, 128, 185, 0.8) 100%);
+}
+
+/* 优化6：优化车辆列表样式 */
+.vehicle-list-container {
+    display: block;
+    width: 100%;
+}
+
+.vehicle-list-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+    margin-top: 5px;
+    table-layout: fixed;
+}
+
+.vehicle-list-table thead tr {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(6px);
+}
+
+.vehicle-list-table th {
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vehicle-list-table th:nth-child(1),
+.vehicle-list-table td:nth-child(1) {
+    width: 35%;
+    padding-left: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vehicle-list-table th:nth-child(2),
+.vehicle-list-table td:nth-child(2) {
+    width: 20%;
+    text-align: center;
+}
+
+.vehicle-list-table th:nth-child(3),
+.vehicle-list-table td:nth-child(3) {
+    width: 25%;
+    text-align: center;
+}
+
+.vehicle-list-table th:nth-child(4),
+.vehicle-list-table td:nth-child(4) {
+    width: 20%;
+    text-align: center;
+    padding-right: 12px;
+}
+
+.vehicle-list-table tbody tr {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(6px);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: 0.5px solid rgba(255, 255, 255, 0.04);
+}
+
+.vehicle-list-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.09);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.vehicle-list-table td {
+    padding: 8px 6px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    vertical-align: middle;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.vehicle-list-table td:first-child {
+    border-left: 0.5px solid rgba(255, 255, 255, 0.04);
+    border-top-left-radius: var(--border-radius-sm);
+    border-bottom-left-radius: var(--border-radius-sm);
+    padding-left: 12px;
+    text-align: left;
+}
+
+.vehicle-list-table td:last-child {
+    border-right: 0.5px solid rgba(255, 255, 255, 0.04);
+    border-top-right-radius: var(--border-radius-sm);
+    border-bottom-right-radius: var(--border-radius-sm);
+    padding-right: 12px;
+    font-weight: 600;
+    color: var(--secondary-color);
+    text-align: center;
+}
+
+.vehicle-list-table .vehicle-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 优化7：优化车辆详情样式 */
+.vehicle-detail-container {
+    display: none;
+}
+
+.vehicle-detail-header {
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.vehicle-detail-title {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 6px 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vehicle-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: var(--transition-smooth);
+}
+
+.status-available {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+}
+
+.status-transporting {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.status-loading {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+.status-unloading {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+}
+
+.status-freeze {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    box-shadow: 0 2px 8px rgba(149, 165, 166, 0.3);
+}
+
+.status-order-taken {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.vehicle-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.metric-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(6px);
+    border-radius: var(--border-radius-md);
+    padding: 10px;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--primary-color), transparent);
+    border-radius: 3px 0 0 3px;
+}
+
+.metric-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.metric-card h4 {
+    margin: 0 0 6px 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+}
+
+.metric-card .value {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    display: block;
+    line-height: 1.1;
+}
+
+.metric-card .unit {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+/* 优化8：优化系统指标样式 */
+.system-metrics-container {
+    display: block;
+}
+
+.system-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.system-metric-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(6px);
+    border-radius: var(--border-radius-md);
+    padding: 10px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.system-metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), var(--accent-glow);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.system-metric-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+}
+
+.system-metric-card .value {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    display: block;
+    line-height: 1.1;
+}
+
+.system-metric-card .unit {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+/* 优化9：优化散点图指标按钮容器 */
+.scatter-metrics-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.scatter-metric-btn {
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--border-radius-md);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: left;
+    backdrop-filter: blur(6px);
+}
+
+.scatter-metric-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(3px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.scatter-metric-btn.active {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.25) 0%, rgba(243, 156, 18, 0.25) 100%);
+    border-color: rgba(241, 196, 15, 0.3);
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.15);
+}
+
+/* 优化10：优化图表容器 */
+.chart-container {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    border-radius: var(--border-radius-md);
+    padding: 12px;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    margin-top: 12px;
+    height: 250px;
+    display: block;
+    transition: var(--transition-smooth);
+}
+
+.chart-container.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+.chart-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.chart-btn {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    backdrop-filter: blur(4px);
+}
+
+.chart-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 优化11：调整底部按钮位置 */
+.bottom-buttons {
+    position: absolute;
+    left: 380px;
+    bottom: -60px;
+    transform: none;
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+    transition: var(--transition-smooth);
+    padding-top: 8px;
+    border-top-left-radius: var(--border-radius-md);
+    border-top-right-radius: var(--border-radius-md);
+    background: linear-gradient(0deg, rgba(25, 25, 35, 0.85), rgba(25, 25, 35, 0.6) 90%);
+    backdrop-filter: blur(6px);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-bottom: none;
+}
+
+.bottom-buttons:hover {
+    bottom: 16px;
+}
+
+.bottom-btn {
+    padding: 10px 16px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(6px);
+}
+
+.bottom-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.comparison-btn {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.85) 0%, rgba(33, 150, 83, 0.85) 100%);
+}
+
+.comparison-btn:hover {
+    box-shadow: 0 12px 24px rgba(39, 174, 96, 0.25);
+}
+
+/* 优化12：简化模态框 */
+#vehicle-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(25, 25, 35, 0.95);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--card-shadow);
+    z-index: 2000;
+    padding: 18px;
+    min-width: 280px;
+    max-width: 360px;
+    backdrop-filter: blur(15px);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+#vehicle-modal h3 {
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+#vehicle-modal button {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--primary-color), rgba(41, 128, 185, 0.85));
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-smooth);
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+#vehicle-modal button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.25);
+}
+
+/* 响应式调整 */
+@media (max-height: 700px) {
+    #vehicle-panel,
+    #scatter-panel {
+        height: 420px;
+        max-height: 420px;
+    }
+    
+    #system-panel,
+    #service-quality-panel {
+        height: 350px;
+        max-height: 350px;
+    }
+    
+    .panel-content {
+        height: calc(100% - 40px);
+    }
+    
+    .chart-container {
+        height: 220px;
+    }
+    
+    #scatter-chart-container {
+        height: 280px;
+    }
+    
+    .service-quality-control {
+        top: 66px;
+    }
+}
+
+@media (max-width: 1400px) {
+    #vehicle-panel,
+    #scatter-panel,
+    #system-panel,
+    #service-quality-panel {
+        width: 320px;
+    }
+    
+    .bottom-buttons {
+        left: 360px;
+    }
+}
+
+@media (max-width: 1200px) {
+    #vehicle-panel,
+    #scatter-panel,
+    #system-panel,
+    #service-quality-panel {
+        width: 300px;
+    }
+    
+    .bottom-buttons {
+        left: 340px;
+    }
+}
+
+/* 数据更新提示 */
+.update-notification {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(46, 204, 113, 0.85);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: var(--transition-smooth);
+    pointer-events: none;
+    z-index: 1001;
+    backdrop-filter: blur(6px);
+}
+
+.update-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 散点图容器高度调整 */
+#scatter-chart-container {
+    height: 320px;
+}

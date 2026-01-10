@@ -70,14 +70,14 @@ public final class ConfigLoader
             if (configUUID.equals("0"))
             {
                 InputStream inputStream = ConfigLoader.class.getClassLoader().getResourceAsStream("config.json");
-                if (inputStream == null) throw new FileNotFoundException("Default config file not found!");
+                if (inputStream == null) throw new FileNotFoundException("Config template file not found!");
 
                 jsonString = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 inputStream.close();
             }
             else
             {
-                jsonString = DBManager.getPreset(configUUID);
+                jsonString = DBManager.getSandbox(configUUID);
             }
 
             return objectMapper.readTree(jsonString);
@@ -97,21 +97,19 @@ public final class ConfigLoader
 
     private static JsonNode getNode(String key)
     {
-        JsonNode configItem = configData.get(key);
-        if (configItem == null || configItem.isNull())
+        JsonNode value = configData.get(key);
+        if (value == null)
         {
             logger.warn("Key [{}] not found in configuration(UUID: {}), default value returned", key, configUUID);
             return null;
         }
-
-        JsonNode valueNode = configItem.get("value");
-        if (valueNode == null || valueNode.isNull())
+        else if (value.isNull())
         {
-            logger.warn("Value not found for key [{}] in configuration(UUID: {}), default value returned", key, configUUID);
+            logger.warn("Value for key [{}] is null in configuration(UUID: {}), default value returned", key, configUUID);
             return null;
         }
 
-        return valueNode;
+        return value;
     }
 
     public static String getString(String key, String defaultValue)

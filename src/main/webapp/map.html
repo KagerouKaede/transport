@@ -3,634 +3,1426 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>地图</title>
+  <title>智能运输系统地图</title>
   <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <style>
-    /* 原有的CSS样式保持不变 */
-    html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; overflow: hidden; }
-    
-    .dashboard-container {
-      display: flex; 
-      height: 100%; 
-      position: relative;
-    }
-    
-    #container {
-      flex: 1; 
-      height: 100%;
-      transition: all 0.3s ease;
-    }
-    
-    .right-panel {
-      width: 400px;
-      background: #f5f5f5;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-      overflow: hidden;
-    }
-    
-    /* 收起状态 */
-    .right-panel.collapsed {
-      width: 0;
-      padding: 0;
-      min-width: 0;
-    }
-    
-    .right-panel.collapsed .panel-content {
-      display: none;
-    }
-    
-    .chart-container {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      height: 300px;
-      overflow: hidden;
-    }
-    
-    canvas#transportChart {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
-    }
-    
-    .params-container {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      overflow-y: auto;
-      flex: 1;
-    }
-    
-    .param-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-    }
-    
-    .param-table td {
-      padding: 6px; 
-      border-bottom: 1px solid #eee;
-    }
-    
-    .param-table td:first-child { 
-      font-weight: bold; 
-      color: #666; 
-    }
-    
-    .param-table td:last-child { 
-      text-align: right; 
-      color: #2c3e50; 
-    }
-    
-    .vehicle-list { 
-      cursor: pointer; 
-      transition: background 0.2s; 
-    }
-    
-    .vehicle-list:hover { 
-      background-color: #eef; 
-    }
-    
-    #toggle-chart-type {
-      padding: 6px 12px;
-      font-size: 13px;
-      border: none;
-      background-color: #3498db;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    
-    #vehicle-modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 1000;
-      padding: 20px;
-      min-width: 300px;
-      max-width: 400px;
-    }
-    
-    #vehicle-list-wrapper {
-      height: 200px;
-      overflow-y: auto;
-      margin-bottom: 15px;
-    }
-
-    /* 折叠按钮 */
-    .collapse-btn {
-      position: absolute;
-      right: 400px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 20px;
-      height: 60px;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px 0 0 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      transition: all 0.3s ease;
-      z-index: 100;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.2);
-    }
-    
-    .collapse-btn:hover {
-      background: #2980b9;
-      width: 25px;
-    }
-    
-    /* 收起状态下的按钮位置 */
-    .right-panel.collapsed ~ .collapse-btn {
-      right: 0;
-      border-radius: 0 8px 8px 0;
-    }
-    
-    /* 面板内部折叠功能 */
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      cursor: pointer;
-      user-select: none;
-      padding: 5px 0;
-    }
-    
-    .panel-header h3 {
-      margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-    
-    .collapse-icon {
-      transition: transform 0.3s ease;
-      font-size: 12px;
-      color: #666;
-      width: 12px;
-      text-align: center;
-    }
-    
-    .panel-content {
-      transition: all 0.3s ease;
-    }
-    
-    .panel-content.collapsed {
-      display: none;
-    }
-    
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    /* 底部按钮容器 */
-    .bottom-buttons {
-      position: fixed;
-      left: 20px;
-      bottom: 20px;
-      z-index: 999;
-      display: flex;
-      gap: 10px;
-    }
-
-    .bottom-btn {
-      padding: 10px 16px;
-      color: white;
-      font-size: 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      transition: background 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .comparison-btn {
-      background-color: #27ae60;
-    }
-
-    .comparison-btn:hover {
-      background-color: #219653;
-    }
-
-    .config-btn {
-      background-color: #e67e22;
-    }
-
-    .config-btn:hover {
-      background-color: #d35400;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css"/>
+  <style></style>
 </head>
 <body>
-<div class="dashboard-container">
-  <!-- 底部按钮容器 -->
-  <div class="bottom-buttons">
-    <button id="open-comparison" class="bottom-btn comparison-btn">
-      📊 打开对比图
-    </button>
-    <!-- <button id="open-config" class="bottom-btn config-btn">
-      ⚙️ 系统配置
-    </button> -->
-  </div>
-
+  <!-- 地图容器 -->
   <div id="container"></div>
   
-  <div class="right-panel" id="right-panel">
-    <div class="chart-container">
-      <div class="chart-header">
-        <h3>总代价变化</h3>
-        <button id="toggle-chart-type">切换为折线图</button>
-      </div>
-      <canvas id="transportChart"></canvas>
+  <!-- 数据更新提示 -->
+  <div id="update-notification" class="update-notification">数据已更新</div>
+  
+  <!-- 控制按钮 - 左上 -->
+  <div class="control-buttons">
+    <button id="toggle-vehicle-panel" class="control-btn vehicle-btn">
+      <span>车辆列表及指标</span>
+      <span class="arrow">▼</span>
+    </button>
+    
+    <button id="toggle-system-panel" class="control-btn system-btn">
+      <span>系统指标</span>
+      <span class="arrow">▼</span>
+    </button>
+  </div>
+  
+  <!-- 车辆指标散点图模块 - 右上 -->
+  <div class="scatter-control">
+    <button id="toggle-scatter-panel" class="scatter-btn">
+      <span>车辆指标散点图</span>
+      <span class="arrow">▼</span>
+    </button>
+  </div>
+  
+  <!-- 服务质量指标模块 - 右上（在散点图下方） -->
+  <div class="service-quality-control">
+    <button id="toggle-service-quality-panel" class="service-quality-btn">
+      <span>服务质量指标</span>
+      <span class="arrow">▼</span>
+    </button>
+  </div>
+  
+  <!-- 车辆面板 -->
+  <div id="vehicle-panel" class="floating-panel vehicle-panel">
+    <div class="panel-header">
+      <button class="back-btn" id="vehicle-back-btn" title="返回列表">←</button>
+      <h3 class="panel-title">车辆列表</h3>
+      <button class="close-btn" id="close-vehicle-panel" title="关闭">×</button>
     </div>
     
-    <div class="params-container">
-      <div class="panel-header" id="vehicle-list-header">
-        <h3>
-          <span class="collapse-icon">▼</span>
-          车辆列表
-        </h3>
+    <div class="panel-content">
+      <!-- 车辆列表视图 -->
+      <div id="vehicle-list-container" class="vehicle-list-container">
+        <table class="vehicle-list-table" id="vehicle-list">
+          <thead>
+            <tr>
+              <th>车辆ID</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>运输次数</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div class="panel-content" id="vehicle-list-content">
-        <div id="vehicle-list-wrapper">
-          <table class="param-table" id="vehicle-list">
-            <thead>
-              <tr><th>车辆类型</th><th>状态</th><th>运输次数</th><th>位置</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      
+      <!-- 车辆详情视图 -->
+      <div id="vehicle-detail-container" class="vehicle-detail-container">
+        <div class="vehicle-detail-header">
+          <h3 id="vehicle-detail-title" class="vehicle-detail-title">
+            <span>车辆详情</span>
+            <div id="vehicle-status-badge" class="vehicle-status">状态</div>
+          </h3>
+        </div>
+        
+        <div class="vehicle-metrics-grid" id="vehicle-metrics-grid">
+          <!-- 指标卡片将动态生成 -->
+        </div>
+        
+        <!-- 车辆指标折线图容器 -->
+        <div id="vehicle-metric-chart-container" class="chart-container" style="display: none; height: 200px;">
+          <div class="chart-header">
+            <h3 id="vehicle-metric-chart-title" class="chart-title">车辆指标趋势</h3>
+            <div class="chart-actions">
+              <button id="close-vehicle-chart" class="chart-btn">返回</button>
+            </div>
+          </div>
+          <canvas id="vehicle-metric-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 系统指标面板 -->
+  <div id="system-panel" class="floating-panel system-panel">
+    <div class="panel-header">
+      <button class="back-btn" id="system-back-btn" title="返回指标">←</button>
+      <h3 class="panel-title">系统指标</h3>
+      <button class="close-btn" id="close-system-panel" title="关闭">×</button>
+    </div>
+    
+    <div class="panel-content">
+      <!-- 系统指标视图 -->
+      <div id="system-metrics-container" class="system-metrics-container">
+        <div class="system-metrics-grid" id="system-metrics-grid">
+          <!-- 系统指标卡片将动态生成 -->
+        </div>
+        
+        <!-- 系统性能指标图表容器 -->
+        <div class="chart-container" id="system-chart-container">
+          <div class="chart-header">
+            <h3 id="chart-title" class="chart-title">系统性能指标趋势</h3>
+            <div class="chart-actions">
+              <button id="toggle-chart-type" class="chart-btn">切换为折线图</button>
+            </div>
+          </div>
+          <canvas id="system-chart"></canvas>
         </div>
       </div>
       
-      <div class="panel-header" id="metrics-header">
-        <h3>
-          <span class="collapse-icon">▼</span>
-          系统指标
-        </h3>
-      </div>
-      <div class="panel-content" id="metrics-content">
-        <table class="param-table">
-          <tr><td>总运输次数</td><td id="total-transport-count">-</td></tr>
-          <tr><td>总运输重量</td><td id="total-weight-summary">-</td></tr>
-          <tr><td>总空驶里程</td><td id="total-empty-mileage">-</td></tr>
-          <tr><td>平均利用率</td><td id="avg-utilization">-</td></tr>
-        </table>
+      <!-- 单个指标图表视图 -->
+      <div id="metric-chart-container" class="chart-container" style="display: none; height: 200px;">
+        <div class="chart-header">
+          <h3 id="metric-chart-title" class="chart-title">指标详情</h3>
+          <div class="chart-actions">
+            <button id="close-metric-chart" class="chart-btn">返回</button>
+          </div>
+        </div>
+        <canvas id="metric-chart"></canvas>
       </div>
     </div>
   </div>
   
-  <button class="collapse-btn" id="panel-collapse-btn" title="收起/展开面板">◀</button>
-</div>
-
-<div id="vehicle-modal">
-  <h3 id="modal-title">车辆详情</h3>
-  <div id="modal-body"></div>
-  <div style="text-align: right; margin-top: 15px;">
-    <button onclick="document.getElementById('vehicle-modal').style.display='none'"
-            style="padding: 6px 12px; background: #3498db; color: white; border: none; border-radius: 4px;">
-      关闭
+  <!-- 散点图面板 -->
+  <div id="scatter-panel" class="floating-panel scatter-panel">
+    <div class="panel-header">
+      <h3 class="panel-title">车辆指标散点图</h3>
+      <button class="close-btn" id="close-scatter-panel" title="关闭">×</button>
+    </div>
+    
+    <div class="panel-content">
+      <div class="scatter-metrics-container">
+        <button class="scatter-metric-btn active" data-metric="mileage_utilization_rate">里程利用率散点图</button>
+        <button class="scatter-metric-btn" data-metric="effectiveTimeRatio">有效运时比散点图</button>
+        <button class="scatter-metric-btn" data-metric="load_utilization_rate">实时装载率散点图</button>
+        <button class="scatter-metric-btn" data-metric="carbon_emission_per_unit">单位运量碳排放散点图</button>
+        <button class="scatter-metric-btn" data-metric="capacity_utilization_rate">运力利用率散点图</button>
+      </div>
+      
+      <div class="chart-container" id="scatter-chart-container" style="display: block; height: 350px;">
+        <div class="chart-header">
+          <h3 id="scatter-chart-title" class="chart-title">里程利用率散点图</h3>
+          <div class="chart-actions">
+            <button id="reset-scatter-zoom" class="chart-btn">重置视图</button>
+          </div>
+        </div>
+        <canvas id="scatter-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 服务质量指标面板 -->
+  <div id="service-quality-panel" class="floating-panel service-quality-panel">
+    <div class="panel-header">
+      <button class="back-btn" id="service-quality-back-btn" title="返回指标" style="display: none;">←</button>
+      <h3 class="panel-title">服务质量指标</h3>
+      <button class="close-btn" id="close-service-quality-panel" title="关闭">×</button>
+    </div>
+    
+    <div class="panel-content">
+      <!-- 服务质量指标视图 -->
+      <div id="service-quality-metrics-container" style="display: block;">
+        <div class="system-metrics-grid" id="service-quality-metrics-grid">
+          <!-- 服务质量指标卡片将动态生成 -->
+        </div>
+        
+        <!-- 服务质量指标图表容器 -->
+        <div class="chart-container" id="service-quality-chart-container">
+          <div class="chart-header">
+            <h3 id="service-quality-chart-title" class="chart-title">服务质量指标趋势</h3>
+            <div class="chart-actions">
+              <button id="toggle-service-quality-chart-type" class="chart-btn">切换为折线图</button>
+          </div>
+        </div>
+        <canvas id="service-quality-chart"></canvas>
+      </div>
+      
+      <!-- 单个服务质量指标图表视图 -->
+      <div id="service-quality-metric-chart-container" class="chart-container" style="display: none; height: 200px;">
+        <div class="chart-header">
+          <h3 id="service-quality-metric-chart-title" class="chart-title">服务质量指标详情</h3>
+          <div class="chart-actions">
+            <button id="close-service-quality-metric-chart" class="chart-btn">返回</button>
+          </div>
+        </div>
+        <canvas id="service-quality-metric-chart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  底部按钮
+  <div class="bottom-buttons">
+    <button id="open-comparison" class="bottom-btn comparison-btn">
+      <span>📊</span>
+      <span>打开对比图</span>
     </button>
   </div>
-</div>
+  
+  <!-- 模态框 -->
+  <div id="vehicle-modal">
+    <h3 id="modal-title">车辆详情</h3>
+    <div id="modal-body"></div>
+    <div style="text-align: right; margin-top: 20px;">
+      <button onclick="document.getElementById('vehicle-modal').style.display='none'">
+        关闭
+      </button>
+    </div>
+  </div>
 
-<script type="text/javascript">
-  window._AMapSecurityConfig = {
-    securityJsCode:"9858defc87670662758db011c95df7ac"
-  };
-</script>
-<script type="module" src="./map/main.js"></script>
-<script type="module">
-  const updateInterval = 5000;
-  // 根据CarStatistics.java修正指标名称
-  const DEFAULT_METRICS = {
-    completeCount: 0,        // 累计完成订单数
-    totalDistance: 0.0,      // 累计行驶距离
-    emptyDistance: 0.0,      // 空驶里程
-    busyTime: 0,             // 累计工作时间
-    idleTime: 0,             // 累计空闲时间
-    totalWeight: 0,          // 累计货运质量
-    accWastedLoad: 0,        // 累计浪费载重
-    cost: 0.0,               // 当前货运成本
-    totalCost: 0.0,          // 累计货运成本
-    idleRate: 0.0,           // 空闲比（计算字段）
-    utilization: 0.0         // 货运资源利用率（计算字段）
-  };
+  <script type="text/javascript">
+    window._AMapSecurityConfig = {
+      securityJsCode:"9858defc87670662758db011c95df7ac"
+    };
+  </script>
+  <!-- 主JavaScript文件 -->
+  <script type="module" src="/javascript/main.js"></script>
 
-  // 存储历史数据用于图表
-  let costHistory = [];
-  let periodLabels = [];
-  let currentPeriod = 1;
-
-  const chartOptions = 
-  {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { position: 'top' } },
-    scales: 
-    {
-      y: { beginAtZero: true, title: { display: true, text: 'cost' } },
-      x: { title: { display: true, text: '周期' } }
-    }
-  };
-
-  let currentChartType = 'bar';
-  const ctx = document.getElementById('transportChart');
-  let chart = new Chart(ctx, 
-  {
-    type: currentChartType,
-    data: 
-    {
-      labels: [],
-      datasets: 
-      [{
-        label: '系统总代价变化',
-        data: [],
-        backgroundColor: 'rgba(52, 152, 219, 0.6)',
-        borderColor: '#2980b9',
-        borderWidth: 1,
-        borderRadius: 4,
-        barThickness: 20,
-        tension: 0.3,
-        fill: true
-      }]
-    },
-    options: chartOptions
-  });
-
-  // 折叠/展开状态
-  let isPanelCollapsed = false;
-  let isVehicleListCollapsed = false;
-  let isMetricsCollapsed = false;
-
-  // 整个右侧面板的折叠
-  document.getElementById('panel-collapse-btn').addEventListener('click', () => 
-  {
-    const rightPanel = document.getElementById('right-panel');
-    const collapseBtn = document.getElementById('panel-collapse-btn');
+  <script type="module">
+    // 全局变量
+    let map;
+    let vehicles = [];
+    let currentPeriod = 1;
     
-    isPanelCollapsed = !isPanelCollapsed;
-    rightPanel.classList.toggle('collapsed', isPanelCollapsed);
-    collapseBtn.textContent = isPanelCollapsed ? '◀' : '▶';
-    collapseBtn.title = isPanelCollapsed ? '展开面板' : '收起面板';
-    
-    // 强制重绘地图
-    setTimeout(() => 
-    {
-      if (window.map) {
-        window.map.resize();
-      }
-    }, 300);
-  });
+    // 车辆指标定义（根据getDashboardData接口）
+    const VEHICLE_METRICS = [
+      { id: 'waitingTime', name: '等待时间', unit: '小时', color: 'rgba(52, 152, 219, 0.8)', borderColor: '#3498db' },
+      { id: 'emptyDistance', name: '空载里程', unit: '千米', color: 'rgba(155, 89, 182, 0.8)', borderColor: '#9b59b6' },
+      { id: 'wastedLoad', name: '载重浪费', unit: '吨', color: 'rgba(231, 76, 60, 0.8)', borderColor: '#e74c3c' },
+      { id: 'totalWeight', name: '总运量', unit: '吨', color: 'rgba(46, 204, 113, 0.8)', borderColor: '#2ecc71' },
+      { id: 'carbonEmission', name: '碳排放量', unit: '吨', color: 'rgba(39, 174, 96, 0.8)', borderColor: '#27ae60' },
+      { id: 'totalDistance', name: '总行驶里程', unit: '千米', color: 'rgba(243, 156, 18, 0.8)', borderColor: '#f39c12' },
+      { id: 'completedOrders', name: '运输次数', unit: '次', color: 'rgba(241, 196, 15, 0.8)', borderColor: '#f1c40f' },
+      { id: 'completeOrderCycle', name: '完成订单周期数', unit: '周期', color: 'rgba(22, 160, 133, 0.8)', borderColor: '#16a085' },
+      { id: 'averageOrderCycle', name: '平均订单周期数', unit: '周期', color: 'rgba(230, 126, 34, 0.8)', borderColor: '#e67e22' },
+      { id: 'mileage_utilization_rate', name: '里程利用率', unit: '', color: 'rgba(41, 128, 185, 0.8)', borderColor: '#2980b9' },
+      { id: 'carbon_emission_per_unit', name: '单位运量碳排放', unit: '吨/吨', color: 'rgba(142, 68, 173, 0.8)', borderColor: '#8e44ad' },
+      { id: 'load_utilization_rate', name: '实时装载率', unit: '', color: 'rgba(192, 57, 43, 0.8)', borderColor: '#c0392b' },
+      { id: 'capacity_utilization_rate', name: '运力利用率', unit: '', color: 'rgba(211, 84, 0, 0.8)', borderColor: '#d35400' }
+    ];
 
-  // 车辆列表的折叠
-  document.getElementById('vehicle-list-header').addEventListener('click', (e) => 
-  {
-    const content = document.getElementById('vehicle-list-content');
-    const icon = document.querySelector('#vehicle-list-header .collapse-icon');
-    
-    isVehicleListCollapsed = !isVehicleListCollapsed;
-    content.classList.toggle('collapsed', isVehicleListCollapsed);
-    icon.textContent = isVehicleListCollapsed ? '▶' : '▼';
-    icon.style.transform = isVehicleListCollapsed ? 'rotate(-90deg)' : 'none';
-  });
+    // 车辆统计指标定义（来自getAllCarsStatistics接口）
+    const CAR_STATISTICS_METRICS = [
+      { id: 'loadUtilizationRateMean', name: '平均装载率', unit: '', color: 'rgba(46, 204, 113, 0.8)', borderColor: '#2ecc71' },
+      { id: 'loadUtilizationRateVariance', name: '装载率方差', unit: '', color: 'rgba(52, 152, 219, 0.8)', borderColor: '#3498db' },
+      { id: 'capacityUtilizationRateMean', name: '平均运力利用率', unit: '', color: 'rgba(241, 196, 15, 0.8)', borderColor: '#f1c40f' },
+      { id: 'capacityUtilizationRateVariance', name: '运力利用率方差', unit: '', color: 'rgba(231, 76, 60, 0.8)', borderColor: '#e74c3c' },
+      { id: 'availableCount', name: '可用车辆数', unit: '辆', color: 'rgba(39, 174, 96, 0.8)', borderColor: '#27ae60' },
+      { id: 'malfunctionCount', name: '故障车辆数', unit: '辆', color: 'rgba(192, 57, 43, 0.8)', borderColor: '#c0392b' }
+    ];
 
-  // 系统指标的折叠
-  document.getElementById('metrics-header').addEventListener('click', (e) => 
-  {
-    const content = document.getElementById('metrics-content');
-    const icon = document.querySelector('#metrics-header .collapse-icon');
-    
-    isMetricsCollapsed = !isMetricsCollapsed;
-    content.classList.toggle('collapsed', isMetricsCollapsed);
-    icon.textContent = isMetricsCollapsed ? '▶' : '▼';
-    icon.style.transform = isMetricsCollapsed ? 'rotate(-90deg)' : 'none';
-  });
+    // 服务质量指标定义（来自getServiceQualityMetrics接口）
+    const SERVICE_QUALITY_METRICS = [
+      { id: 'ontimeDeliveryRate', name: '准时交付率', unit: '', color: 'rgba(46, 204, 113, 0.8)', borderColor: '#2ecc71' },
+      { id: 'totalDelayTime', name: '总延迟时间', unit: '小时', color: 'rgba(231, 76, 60, 0.8)', borderColor: '#e74c3c' },
+      { id: 'averageDelayTime', name: '平均延迟时间', unit: '小时', color: 'rgba(243, 156, 18, 0.8)', borderColor: '#f39c12' },
+      { id: 'averageOrderCycle', name: '平均订单周期', unit: '周期', color: 'rgba(155, 89, 182, 0.8)', borderColor: '#9b59b6' }
+    ];
 
-  document.getElementById('toggle-chart-type').addEventListener('click', () => 
-  {
-    currentChartType = currentChartType === 'bar' ? 'line' : 'bar';
-    document.getElementById('toggle-chart-type').textContent =
-      currentChartType === 'bar' ? '切换为折线图' : '切换为柱状图';
+    // 系统性能指标定义（来自getSystemMetrics接口）
+    const SYSTEM_METRICS = [
+      { id: 'systemCriticalLoad', name: '系统临界负载', unit: '', color: 'rgba(155, 89, 182, 0.8)', borderColor: '#9b59b6' }
+    ];
 
-    const labels = chart.data.labels;
-    const data = chart.data.datasets[0].data;
-
-    chart.destroy();
-    chart = new Chart(ctx, 
-    {
-      type: currentChartType,
-      data: 
-      {
-        labels: labels,
-        datasets: 
-        [{
-          label: '系统总cost变化',
-          data: data,
-          backgroundColor: 'rgba(52, 152, 219, 0.6)',
-          borderColor: '#2980b9',
-          borderWidth: 1,
-          borderRadius: 4,
-          barThickness: 20,
-          tension: 0.3,
-          fill: true
-        }]
+    // 散点图指标定义
+    const SCATTER_METRICS = {
+      'mileage_utilization_rate': { 
+        name: '里程利用率散点图', 
+        xAxis: 'totalDistance', 
+        yAxis: 'mileage_utilization_rate',
+        xLabel: '总行驶里程(千米)',
+        yLabel: '里程利用率'
       },
-      options: chartOptions
-    });
-  });
-
-  let vehicles = [];
-
-  async function fetchDashboardData() 
-  {
-    try 
-    {
-      let url = new URL('/data/getDashboardData', window.location.origin);
-      const res = await fetch(url);
-      const responseData = await res.json();
-      
-      // 解析后端返回的数据结构
-      // 后端返回的是 Map<Double, List<Map<String, String>>>
-      // 其中Key是总cost，Value是车辆数据列表
-      let totalCost = 0;
-      let carMetrics = [];
-      
-      // 解析数据结构
-      for (const [cycleCost, data] of Object.entries(responseData)) {
-        totalCost = parseFloat(cycleCost);
-        carMetrics = data;
+      'effectiveTimeRatio': { 
+        name: '有效运时比散点图', 
+        xAxis: 'completeOrderCycle', 
+        yAxis: 'effectiveTimeRatio',
+        xLabel: '完成订单周期数',
+        yLabel: '有效运时比'
+      },
+      'load_utilization_rate': { 
+        name: '实时装载率散点图', 
+        xAxis: 'totalWeight', 
+        yAxis: 'load_utilization_rate',
+        xLabel: '总运量(吨)',
+        yLabel: '实时装载率'
+      },
+      'carbon_emission_per_unit': { 
+        name: '单位运量碳排放散点图', 
+        xAxis: 'totalWeight', 
+        yAxis: 'carbon_emission_per_unit',
+        xLabel: '总运量(吨)',
+        yLabel: '单位运量碳排放(吨/吨)'
+      },
+      'capacity_utilization_rate': { 
+        name: '运力利用率散点图', 
+        xAxis: 'carbonEmission', 
+        yAxis: 'capacity_utilization_rate',
+        xLabel: '碳排放量(吨)',
+        yLabel: '运力利用率'
       }
-
-      // 更新图表数据
-      costHistory.push(totalCost);
-      periodLabels.push(`周期${currentPeriod}`);
-      currentPeriod++;
-
-      // 限制显示的数据点数量
-      const maxDataPoints = 20;
-      if (costHistory.length > maxDataPoints) {
-        costHistory = costHistory.slice(-maxDataPoints);
-        periodLabels = periodLabels.slice(-maxDataPoints);
-      }
-
-      // 更新图表
-      chart.data.labels = periodLabels;
-      chart.data.datasets[0].data = costHistory;
-      chart.update();
-
-      // 处理车辆数据 - 根据CarStatistics.java修正字段名
-      vehicles = carMetrics.map(c => 
-      {
-        const completeCount = parseInt(c.completeCount) || 0;
-        const totalDistance = parseFloat(c.totalDistance) || 0;
-        const emptyDistance = parseFloat(c.emptyDistance) || 0;
-        const busyTime = parseInt(c.busyTime) || 0;
-        const idleTime = parseInt(c.idleTime) || 0;
-        
-        // 计算派生指标
-        const idleRate = (busyTime + idleTime) > 0 ? (idleTime / (busyTime + idleTime)) * 100 : 0;
-        const utilization = totalDistance > 0 ? ((totalDistance - emptyDistance) / totalDistance) * 100 : 0;
-
-        return {
-          UUID: c.UUID,
-          status: c.status || (Math.random() > 0.5 ? "TRANSPORTING" : "AVAILABLE"),
-          lat: parseFloat(c.lat) || (30.6 + Math.random() * 0.1),
-          lon: parseFloat(c.lon) || (104.0 + Math.random() * 0.1),
-          metrics: { 
-            ...DEFAULT_METRICS,
-            completeCount: completeCount,
-            totalDistance: totalDistance,
-            emptyDistance: emptyDistance,
-            busyTime: busyTime,
-            idleTime: idleTime,
-            totalWeight: parseInt(c.totalWeight) || 0,
-            accWastedLoad: parseInt(c.accWastedLoad) || 0,
-            cost: parseFloat(c.cost) || 0,
-            totalCost: parseFloat(c.totalCost) || 0,
-            idleRate: idleRate,           // 计算字段
-            utilization: utilization      // 计算字段
-          }
-        };
-      });
-
-      updateVehicleList(vehicles);
-      updateSystemMetrics(vehicles);
-
-    } 
-    catch (err) 
-    {
-      console.error('获取仪表盘数据失败:', err);
-    }
-  }
-
-  function updateVehicleList(vehicleList) 
-  {
-    const tbody = document.querySelector('#vehicle-list tbody');
-    tbody.innerHTML = vehicleList.map(v => `
-      <tr class="vehicle-list" data-uuid="${v.UUID}">
-        <td>货车</td>
-        <td>
-        ${v.status === "TRANSPORTING" ? '运货行驶' : (v.status==="AVAILABLE"?'空闲':(v.status==="UNLOADING"?'卸货':
-        (v.status==="FREEZE"?'停车等待':(v.status==="LOADING"?'装货':'接单行驶'))))}
-        </td>
-        <td>${v.metrics.completeCount}</td>
-        <td>${v.lat.toFixed(5)}, ${v.lon.toFixed(5)}</td>
-      </tr>
-    `).join('');
-
-    document.querySelectorAll('.vehicle-list').forEach(row => 
-    {
-      row.addEventListener('click', () => 
-      {
-        const uuid = row.dataset.uuid;
-        const v = vehicles.find(v => v.UUID === uuid);
-        if (!v) return;
-
-        const m = v.metrics;
-        const totalTime = m.busyTime + m.idleTime; // 总时间 = 工作时间 + 空闲时间
-        
-        const html = `
-          <p><strong>UUID:</strong> ${v.UUID}</p>
-          <p><strong>运输次数：</strong> ${m.completeCount}</p>
-          <p><strong>总重量：</strong> ${m.totalWeight} KG</p>
-          <p><strong>空驶里程：</strong> ${m.emptyDistance.toFixed(2)} km</p>
-          <p><strong>总行驶里程：</strong> ${m.totalDistance.toFixed(2)} km</p>
-          <p><strong>工作时间：</strong> ${m.busyTime} 分钟</p>
-          <p><strong>空闲时间：</strong> ${m.idleTime} 分钟</p>
-          <p><strong>总时间：</strong> ${totalTime} 分钟</p>
-          <p><strong>利用率：</strong> ${m.utilization.toFixed(1)}%</p>
-          <p><strong>空闲比：</strong> ${m.idleRate.toFixed(2)}%</p>
-          <p><strong>浪费载重：</strong> ${m.accWastedLoad} KG</p>
-          <p><strong>当前成本：</strong> ${m.cost.toFixed(2)}</p>
-          <p><strong>累计成本：</strong> ${m.totalCost.toFixed(2)}</p>
-        `;
-
-        document.getElementById('modal-title').textContent = `车辆 ${v.UUID} 指标`;
-        document.getElementById('modal-body').innerHTML = html;
-        document.getElementById('vehicle-modal').style.display = 'block';
-      });
-    });
-  }
-
-  function updateSystemMetrics(vehicleList) 
-  {
-    const total = vehicleList.reduce((acc, v) => 
-    {
-      const m = v.metrics;
-      acc.trip += m.completeCount;
-      acc.weight += m.totalWeight;
-      acc.empty += m.emptyDistance;
-      acc.util += m.utilization;
-      acc.count += m.utilization > 0 ? 1 : 0; // 只计算有利用率的车辆
-      return acc;
-    }, { trip: 0, weight: 0, empty: 0, util: 0, count: 0 });
+    };
     
-    document.getElementById('total-transport-count').textContent = total.trip;
-    document.getElementById('total-weight-summary').textContent = `${total.weight} KG`;
-    document.getElementById('total-empty-mileage').textContent = `${total.empty.toFixed(2)} km`;
-    document.getElementById('avg-utilization').textContent = `${(total.count > 0 ? total.util / total.count : 0).toFixed(1)}%`;
-  }
+    // 状态映射
+    const STATUS_MAP = {
+      "AVAILABLE": { text: '空闲', class: 'status-available', icon: '🟢' },
+      "ORDER_TAKEN": { text: '接单行驶', class: 'status-order-taken', icon: '🛣️' },
+      "TRANSPORTING": { text: '运货行驶', class: 'status-transporting', icon: '🚚' },
+      "UNLOADING": { text: '卸货', class: 'status-unloading', icon: '📦' },
+      "LOADING": { text: '装货', class: 'status-loading', icon: '📥' },
+      "FREEZE": { text: '停车等待', class: 'status-freeze', icon: '⏸️' }
+    };
 
-  // 初始化数据获取
-  fetchDashboardData();
-  setInterval(fetchDashboardData, updateInterval);
+    // 图表实例
+    let systemChart = null;
+    let metricChart = null;
+    let scatterChart = null;
+    let serviceQualityChart = null;
+    let vehicleMetricChart = null;
+    let serviceQualityMetricChart = null;
+    let currentChartType = 'bar';
+    let currentMetricChartType = 'bar';
+    let currentMetricId = 'totalCost';
+    let currentScatterMetric = 'mileage_utilization_rate';
 
-  // 打开对比图按钮
-  document.getElementById('open-comparison').addEventListener('click', () => 
-  {
-    window.open('comparison.html', '_blank');
-  });
+    // 历史数据存储
+    let vehicleMetricsHistory = {}; // {vehicleId: {metricId: [历史数据]}}
+    let carStatisticsHistory = {}; // {metricId: [历史数据]}
+    let systemMetricsHistory = {}; // {metricId: [历史数据]}
+    let serviceQualityHistory = {}; // {metricId: [历史数据]}
+    let periodLabels = []; // 周期标签
 
-  // 打开系统配置按钮
-  // document.getElementById('open-config').addEventListener('click', () => 
-  // {
-  //   window.open('config.html', '_blank');
-  // });
-</script>
+    // DOM元素
+    const toggleVehiclePanelBtn = document.getElementById('toggle-vehicle-panel');
+    const toggleSystemPanelBtn = document.getElementById('toggle-system-panel');
+    const toggleScatterPanelBtn = document.getElementById('toggle-scatter-panel');
+    const toggleServiceQualityPanelBtn = document.getElementById('toggle-service-quality-panel');
+    const vehiclePanel = document.getElementById('vehicle-panel');
+    const systemPanel = document.getElementById('system-panel');
+    const scatterPanel = document.getElementById('scatter-panel');
+    const serviceQualityPanel = document.getElementById('service-quality-panel');
+    const closeVehiclePanelBtn = document.getElementById('close-vehicle-panel');
+    const closeSystemPanelBtn = document.getElementById('close-system-panel');
+    const closeScatterPanelBtn = document.getElementById('close-scatter-panel');
+    const closeServiceQualityPanelBtn = document.getElementById('close-service-quality-panel');
+    const vehicleBackBtn = document.getElementById('vehicle-back-btn');
+    const systemBackBtn = document.getElementById('system-back-btn');
+    const serviceQualityBackBtn = document.getElementById('service-quality-back-btn');
+    const vehicleListContainer = document.getElementById('vehicle-list-container');
+    const vehicleDetailContainer = document.getElementById('vehicle-detail-container');
+    const systemMetricsContainer = document.getElementById('system-metrics-container');
+    const metricChartContainer = document.getElementById('metric-chart-container');
+    const systemChartContainer = document.getElementById('system-chart-container');
+    const scatterChartContainer = document.getElementById('scatter-chart-container');
+    const serviceQualityMetricsGrid = document.getElementById('service-quality-metrics-grid');
+    const serviceQualityMetricsContainer = document.getElementById('service-quality-metrics-container');
+    const serviceQualityChartContainer = document.getElementById('service-quality-chart-container');
+    const serviceQualityMetricChartContainer = document.getElementById('service-quality-metric-chart-container');
+    const vehicleMetricChartContainer = document.getElementById('vehicle-metric-chart-container');
+    const updateNotification = document.getElementById('update-notification');
+    const closeVehicleChartBtn = document.getElementById('close-vehicle-chart');
+    const closeMetricChartBtn = document.getElementById('close-metric-chart');
+    const closeServiceQualityMetricChartBtn = document.getElementById('close-service-quality-metric-chart');
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initUI();
+      initCharts();
+      initScatterPanel();
+      initServiceQualityPanel();
+      initHistoryStorage();
+      
+      // 获取初始数据
+      fetchAllData();
+      
+      // 设置定时更新
+      setInterval(fetchAllData, 5000);
+      
+      // 初始化地图
+      if (typeof AMap !== 'undefined') {
+        initMap();
+      }
+    });
+
+    // 初始化地图
+    function initMap() {
+      map = new AMap.Map('container', {
+        zoom: 12,
+        center: [104.06, 30.67],
+        viewMode: '3D',
+        pitch: 50,
+        rotation: -15,
+        mapStyle: 'amap://styles/dark',
+        features: ['bg', 'road', 'building'],
+        showLabel: true
+      });
+    }
+
+    // 初始化UI
+    function initUI() {
+      // 车辆面板控制
+      toggleVehiclePanelBtn.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (isActive) {
+          hideVehiclePanel();
+        } else {
+          showVehiclePanel();
+        }
+      });
+      
+      closeVehiclePanelBtn.addEventListener('click', hideVehiclePanel);
+      
+      // 系统面板控制
+      toggleSystemPanelBtn.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (isActive) {
+          hideSystemPanel();
+        } else {
+          showSystemPanel();
+        }
+      });
+      
+      closeSystemPanelBtn.addEventListener('click', hideSystemPanel);
+      
+      // 返回按钮
+      vehicleBackBtn.addEventListener('click', function() {
+        showVehicleList();
+      });
+      
+      systemBackBtn.addEventListener('click', function() {
+        showSystemMetrics();
+      });
+      
+      serviceQualityBackBtn.addEventListener('click', function() {
+        showServiceQualityMetrics();
+      });
+      
+      // 图表返回按钮
+      if (closeVehicleChartBtn) {
+        closeVehicleChartBtn.addEventListener('click', function() {
+          hideVehicleMetricChart();
+        });
+      }
+      
+      if (closeMetricChartBtn) {
+        closeMetricChartBtn.addEventListener('click', function() {
+          showSystemMetrics();
+        });
+      }
+      
+      if (closeServiceQualityMetricChartBtn) {
+        closeServiceQualityMetricChartBtn.addEventListener('click', function() {
+          showServiceQualityMetrics();
+        });
+      }
+      
+      // 对比图按钮
+      document.getElementById('open-comparison').addEventListener('click', function() {
+        window.open('comparison.html', '_blank');
+      });
+      
+      // 点击地图空白处关闭面板
+      document.getElementById('container').addEventListener('click', function(e) {
+        if (!vehiclePanel.contains(e.target) && !systemPanel.contains(e.target) && 
+            !scatterPanel.contains(e.target) && !serviceQualityPanel.contains(e.target) && 
+            !toggleVehiclePanelBtn.contains(e.target) && !toggleSystemPanelBtn.contains(e.target) && 
+            !toggleScatterPanelBtn.contains(e.target) && !toggleServiceQualityPanelBtn.contains(e.target)) {
+          hideVehiclePanel();
+          hideSystemPanel();
+          hideScatterPanel();
+          hideServiceQualityPanel();
+        }
+      });
+    }
+
+    // 初始化散点图面板
+    function initScatterPanel() {
+      // 散点图面板控制
+      toggleScatterPanelBtn.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (isActive) {
+          hideScatterPanel();
+        } else {
+          showScatterPanel();
+        }
+      });
+      
+      closeScatterPanelBtn.addEventListener('click', hideScatterPanel);
+      
+      // 指标按钮点击事件
+      document.querySelectorAll('.scatter-metric-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.scatter-metric-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          
+          currentScatterMetric = this.dataset.metric;
+          updateScatterChart();
+          
+          // 更新图表标题
+          document.getElementById('scatter-chart-title').textContent = 
+            SCATTER_METRICS[currentScatterMetric].name;
+        });
+      });
+      
+      // 重置视图按钮
+      document.getElementById('reset-scatter-zoom').addEventListener('click', function() {
+        if (scatterChart) {
+          scatterChart.resetZoom();
+        }
+      });
+    }
+
+    // 初始化服务质量面板
+    function initServiceQualityPanel() {
+      toggleServiceQualityPanelBtn.addEventListener('click', function() {
+        const isActive = this.classList.contains('active');
+        
+        if (isActive) {
+          hideServiceQualityPanel();
+        } else {
+          showServiceQualityPanel();
+        }
+      });
+      
+      closeServiceQualityPanelBtn.addEventListener('click', hideServiceQualityPanel);
+    }
+
+    // 初始化历史数据存储
+    function initHistoryStorage() {
+      // 初始化车辆统计指标历史
+      CAR_STATISTICS_METRICS.forEach(metric => {
+        carStatisticsHistory[metric.id] = [];
+      });
+      
+      // 初始化系统性能指标历史
+      SYSTEM_METRICS.forEach(metric => {
+        systemMetricsHistory[metric.id] = [];
+      });
+      
+      // 初始化服务质量指标历史
+      SERVICE_QUALITY_METRICS.forEach(metric => {
+        serviceQualityHistory[metric.id] = [];
+      });
+      
+      // 初始化系统计算指标历史
+      const systemCalcMetrics = ['totalCost', 'totalTransportCount', 'totalWeight', 'totalEmptyMileage', 'avgUtilization'];
+      systemCalcMetrics.forEach(metric => {
+        systemMetricsHistory[metric] = [];
+      });
+      
+      // 初始化周期标签
+      for (let i = 1; i <= 5; i++) {
+        periodLabels.push(`周期 ${i}`);
+      }
+    }
+
+    // 显示/隐藏面板函数
+    function showVehiclePanel() {
+      vehiclePanel.style.display = 'block';
+      toggleVehiclePanelBtn.classList.add('active');
+      toggleVehiclePanelBtn.querySelector('.arrow').textContent = '▲';
+    }
+
+    function hideVehiclePanel() {
+      vehiclePanel.style.display = 'none';
+      toggleVehiclePanelBtn.classList.remove('active');
+      toggleVehiclePanelBtn.querySelector('.arrow').textContent = '▼';
+    }
+
+    function showSystemPanel() {
+      systemPanel.style.display = 'block';
+      toggleSystemPanelBtn.classList.add('active');
+      toggleSystemPanelBtn.querySelector('.arrow').textContent = '▲';
+    }
+
+    function hideSystemPanel() {
+      systemPanel.style.display = 'none';
+      toggleSystemPanelBtn.classList.remove('active');
+      toggleSystemPanelBtn.querySelector('.arrow').textContent = '▼';
+    }
+
+    function showScatterPanel() {
+      scatterPanel.style.display = 'block';
+      toggleScatterPanelBtn.classList.add('active');
+      toggleScatterPanelBtn.querySelector('.arrow').textContent = '▲';
+    }
+
+    function hideScatterPanel() {
+      scatterPanel.style.display = 'none';
+      toggleScatterPanelBtn.classList.remove('active');
+      toggleScatterPanelBtn.querySelector('.arrow').textContent = '▼';
+    }
+
+    function showServiceQualityPanel() {
+      serviceQualityPanel.style.display = 'block';
+      toggleServiceQualityPanelBtn.classList.add('active');
+      toggleServiceQualityPanelBtn.querySelector('.arrow').textContent = '▲';
+    }
+
+    function hideServiceQualityPanel() {
+      serviceQualityPanel.style.display = 'none';
+      toggleServiceQualityPanelBtn.classList.remove('active');
+      toggleServiceQualityPanelBtn.querySelector('.arrow').textContent = '▼';
+    }
+
+    // 显示车辆列表
+    function showVehicleList() {
+      vehicleListContainer.style.display = 'block';
+      vehicleDetailContainer.style.display = 'none';
+      vehicleBackBtn.style.display = 'none';
+      
+      // 隐藏车辆指标图表
+      hideVehicleMetricChart();
+    }
+
+    // 显示系统指标
+    function showSystemMetrics() {
+      systemMetricsContainer.style.display = 'block';
+      metricChartContainer.style.display = 'none';
+      systemBackBtn.style.display = 'none';
+    }
+
+    // 显示服务质量指标
+    function showServiceQualityMetrics() {
+      serviceQualityMetricsContainer.style.display = 'block';
+      serviceQualityMetricChartContainer.style.display = 'none';
+      serviceQualityBackBtn.style.display = 'none';
+    }
+
+    // 隐藏车辆指标图表
+    function hideVehicleMetricChart() {
+      vehicleMetricChartContainer.style.display = 'none';
+      document.getElementById('vehicle-metrics-grid').style.display = 'grid';
+    }
+
+    // 获取所有数据
+    async function fetchAllData() {
+      try {
+        currentPeriod++;
+        
+        // 并行获取所有数据
+        const [vehicleList, carStatistics, serviceQuality, systemMetrics] = await Promise.all([
+          fetchVehicleList(),
+          fetchCarStatistics(),
+          fetchServiceQualityMetrics(),
+          fetchSystemMetrics()
+        ]);
+        
+        // 更新指标历史数据
+        updateMetricsHistory(carStatistics, carStatisticsHistory, CAR_STATISTICS_METRICS);
+        updateMetricsHistory(serviceQuality, serviceQualityHistory, SERVICE_QUALITY_METRICS);
+        updateMetricsHistory(systemMetrics, systemMetricsHistory, SYSTEM_METRICS);
+        
+        // 更新UI
+        updateVehicleList(vehicleList);
+        updateServiceQualityMetrics(serviceQuality);
+        updateSystemMetrics(systemMetrics);
+        
+        // 显示更新提示
+        showUpdateNotification();
+        
+      } catch (err) {
+        console.error('获取数据失败:', err);
+      }
+    }
+
+    // 获取车辆列表
+    async function fetchVehicleList() {
+      try {
+        const response = await fetch('/data/getCarData');
+        const vehicleData = await response.json();
+        
+        // 获取每个车辆的详细数据
+        const vehicles = await Promise.all(vehicleData.map(async (car) => {
+          const metrics = await fetchVehicleDashboardData(car.UUID);
+          return {
+            ...car,
+            metrics: metrics
+          };
+        }));
+        
+        return vehicles;
+      } catch (err) {
+        console.error('获取车辆列表失败:', err);
+        return [];
+      }
+    }
+
+    // 获取单个车辆的仪表盘数据
+    async function fetchVehicleDashboardData(uuid) {
+      try {
+        const response = await fetch(`/data/getDashboardData?UUID=${uuid}`);
+        const data = await response.json();
+        
+        // 计算有效运时比（荷载非零时长 / 非空闲时长）
+        // 这里需要根据实际数据计算，假设有荷载时长字段，这里简化处理
+        const effectiveTimeRatio = data.totalDistance > 0 ? 
+          data.totalDistance / (data.totalDistance + (data.waitingTime || 0)) : 0;
+        
+        // 确保返回的字段与后端一致（驼峰和下划线混合）
+        return {
+          ...data,
+          effectiveTimeRatio
+        };
+      } catch (err) {
+        console.error(`获取车辆${uuid}数据失败:`, err);
+        return {};
+      }
+    }
+    
+    // 获取车辆统计指标
+    async function fetchCarStatistics() {
+      try {
+        const response = await fetch('/data/getAllCarsStatistics');
+        const data = await response.json();
+        
+        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
+        const transformedData = {
+          loadUtilizationRateMean: parseFloat(data.Load_utilization_rate_mean) || 0,
+          loadUtilizationRateVariance: parseFloat(data.Load_utilization_rate_variance) || 0,
+          capacityUtilizationRateMean: parseFloat(data.Capacity_utilization_rate_mean) || 0,
+          capacityUtilizationRateVariance: parseFloat(data.Capacity_utilization_rate_variance) || 0,
+          availableCount: parseInt(data.Available_count) || 0,
+          malfunctionCount: parseInt(data.Malfunction_count) || 0
+        };
+        
+        return transformedData;
+      } catch (err) {
+        console.error('获取车辆统计指标失败:', err);
+        return {};
+      }
+    }
+
+    // 获取服务质量指标
+    async function fetchServiceQualityMetrics() {
+      try {
+        const response = await fetch('/data/getServiceQualityMetrics');
+        const data = await response.json();
+        
+        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
+        const transformedData = {
+          ontimeDeliveryRate: parseFloat(data.Ontime_delivery_rate) || 0,
+          totalDelayTime: parseFloat(data.Total_delay_time) || 0,
+          averageDelayTime: parseFloat(data.Average_delay_time) || 0,
+          averageOrderCycle: parseFloat(data.Average_order_cycle) || 0
+        };
+        
+        return transformedData;
+      } catch (err) {
+        console.error('获取服务质量指标失败:', err);
+        return {};
+      }
+    }
+
+    // 获取系统指标
+    async function fetchSystemMetrics() {
+      try {
+        const response = await fetch('/data/getSystemMetrics');
+        const data = await response.json();
+        
+        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
+        const transformedData = {
+          systemCriticalLoad: parseFloat(data.System_critical_load) || 0
+        };
+        
+        return transformedData;
+      } catch (err) {
+        console.error('获取系统指标失败:', err);
+        return {};
+      }
+    }
+
+    // 通用历史数据更新函数
+    function updateMetricsHistory(currentData, historyStorage, metricsList) {
+      metricsList.forEach(metric => {
+        const value = currentData[metric.id] || 0;
+        if (!historyStorage[metric.id]) {
+          historyStorage[metric.id] = [];
+        }
+        historyStorage[metric.id].push(value);
+        
+        // 保留最近5个周期
+        if (historyStorage[metric.id].length > 5) {
+          historyStorage[metric.id].shift();
+        }
+      });
+    }
+
+    // 更新车辆列表
+    function updateVehicleList(vehicleList) {
+      const tbody = document.querySelector('#vehicle-list tbody');
+      tbody.innerHTML = '';
+      
+      vehicles = vehicleList;
+      
+      vehicleList.forEach(vehicle => {
+        // 初始化车辆历史数据存储
+        if (!vehicleMetricsHistory[vehicle.UUID]) {
+          vehicleMetricsHistory[vehicle.UUID] = {};
+          VEHICLE_METRICS.forEach(metric => {
+            vehicleMetricsHistory[vehicle.UUID][metric.id] = [];
+          });
+        }
+        
+        // 更新历史数据（保留最近5个周期）
+        VEHICLE_METRICS.forEach(metric => {
+          const value = vehicle.metrics[metric.id];
+          if (value !== undefined) {
+            vehicleMetricsHistory[vehicle.UUID][metric.id].push(value);
+            if (vehicleMetricsHistory[vehicle.UUID][metric.id].length > 5) {
+              vehicleMetricsHistory[vehicle.UUID][metric.id].shift();
+            }
+          }
+        });
+        
+        const status = STATUS_MAP[vehicle.state] || { 
+          text: vehicle.state, 
+          class: 'status-available', 
+          icon: '🚗' 
+        };
+        
+        const row = document.createElement('tr');
+        row.dataset.uuid = vehicle.UUID;
+        row.innerHTML = `
+          <td title="${vehicle.UUID}">${vehicle.UUID.substring(0, 8)}...</td>
+          <td><span style="opacity: 0.9;">🚚</span> 货车</td>
+          <td><span class="vehicle-status ${status.class}">${status.text}</span></td>
+          <td><strong>${vehicle.metrics.completedOrders || 0}</strong></td>
+        `;
+        
+        row.addEventListener('click', function() {
+          showVehicleDetail(vehicle);
+        });
+        
+        tbody.appendChild(row);
+      });
+      
+      // 更新散点图
+      updateScatterChart();
+    }
+
+    // 显示车辆详情
+    function showVehicleDetail(vehicle) {
+      // 显示车辆详情，隐藏列表
+      vehicleListContainer.style.display = 'none';
+      vehicleDetailContainer.style.display = 'block';
+      vehicleBackBtn.style.display = 'block';
+      
+      // 隐藏车辆指标图表
+      hideVehicleMetricChart();
+      
+      // 设置车辆标题和状态
+      document.getElementById('vehicle-detail-title').querySelector('span').textContent = 
+        `车辆 ${vehicle.UUID.substring(0, 8)}...`;
+        
+      const status = STATUS_MAP[vehicle.state] || { class: 'status-available' };
+      const statusBadge = document.getElementById('vehicle-status-badge');
+      statusBadge.className = `vehicle-status ${status.class}`;
+      statusBadge.textContent = STATUS_MAP[vehicle.state]?.text || '未知';
+      
+      // 生成指标卡片
+      const metricsGrid = document.getElementById('vehicle-metrics-grid');
+      metricsGrid.innerHTML = '';
+      
+      VEHICLE_METRICS.forEach(metric => {
+        const value = vehicle.metrics[metric.id] || 0;
+        let formattedValue = value;
+        let displayUnit = metric.unit;
+        
+        if (typeof value === 'number') {
+          if (metric.id.includes('Rate') || metric.id.includes('utilization')) {
+            formattedValue = (value * 100).toFixed(2);
+            displayUnit = '%';
+          } else {
+            formattedValue = value.toFixed(2);
+          }
+        }
+        
+        const metricCard = document.createElement('div');
+        metricCard.className = 'metric-card';
+        metricCard.style.borderLeft = `3px solid ${metric.borderColor}`;
+        metricCard.dataset.metricId = metric.id;
+        metricCard.innerHTML = `
+          <h4>${metric.name}</h4>
+          <div>
+            <span class="value">${formattedValue}</span>
+            <span class="unit">${displayUnit}</span>
+          </div>
+        `;
+        
+        // 添加点击事件，显示该指标的折线图
+        metricCard.addEventListener('click', function() {
+          showVehicleMetricChart(vehicle.UUID, metric.id, metric.name);
+        });
+        
+        metricsGrid.appendChild(metricCard);
+      });
+    }
+
+    // 显示车辆指标折线图
+    function showVehicleMetricChart(vehicleId, metricId, metricName) {
+      // 隐藏指标网格，显示图表容器
+      document.getElementById('vehicle-metrics-grid').style.display = 'none';
+      vehicleMetricChartContainer.style.display = 'block';
+      
+      // 更新图表标题
+      document.getElementById('vehicle-metric-chart-title').textContent = `${metricName} - 历史趋势`;
+      
+      const historyData = vehicleMetricsHistory[vehicleId]?.[metricId] || [];
+      const labels = Array.from({length: historyData.length}, (_, i) => 
+        `周期 ${currentPeriod - historyData.length + i + 1}`);
+      
+      const ctx = document.getElementById('vehicle-metric-chart').getContext('2d');
+      
+      // 销毁现有图表
+      if (vehicleMetricChart) {
+        vehicleMetricChart.destroy();
+      }
+      
+      // 计算图表范围
+      const maxValue = Math.max(...historyData);
+      const minValue = Math.min(...historyData);
+      const paddingTop = maxValue * 0.2;
+      const paddingBottom = minValue > 0 ? minValue * 0.2 : 0;
+      
+      const metricConfig = VEHICLE_METRICS.find(m => m.id === metricId);
+      
+      vehicleMetricChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['周期 1'],
+          datasets: [{
+            label: metricName,
+            data: historyData.length > 0 ? historyData : [0],
+            borderColor: metricConfig?.borderColor || '#3498db',
+            backgroundColor: metricConfig?.color || 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '周期数'
+              },
+              min: Math.max(1, currentPeriod - 4),
+              max: currentPeriod
+            },
+            y: {
+              title: {
+                display: true,
+                text: metricConfig?.unit || ''
+              },
+              beginAtZero: minValue >= 0,
+              suggestedMin: Math.max(0, minValue - paddingBottom),
+              suggestedMax: maxValue + paddingTop
+            }
+          },
+          plugins: {
+            legend: {
+              display: true
+            }
+          }
+        }
+      });
+    }
+
+    // 更新服务质量指标
+    function updateServiceQualityMetrics(data) {
+      const metricsGrid = document.getElementById('service-quality-metrics-grid');
+      if (!metricsGrid) return;
+      
+      metricsGrid.innerHTML = '';
+      
+      SERVICE_QUALITY_METRICS.forEach(metric => {
+        const value = data[metric.id] || 0;
+        let formattedValue = value;
+        let displayUnit = metric.unit;
+        
+        if (typeof value === 'number') {
+          if (metric.id.includes('Rate')) {
+            formattedValue = (value * 100).toFixed(2);
+            displayUnit = '%';
+          } else {
+            formattedValue = value.toFixed(2);
+          }
+        }
+        
+        const metricCard = document.createElement('div');
+        metricCard.className = 'system-metric-card';
+        metricCard.dataset.metricId = metric.id;
+        metricCard.style.borderLeft = `3px solid ${metric.borderColor}`;
+        metricCard.innerHTML = `
+          <h4>${metric.name}</h4>
+          <div>
+            <span class="value">${formattedValue}</span>
+            <span class="unit">${displayUnit}</span>
+          </div>
+        `;
+        
+        // 添加点击事件，显示该指标的折线图
+        metricCard.addEventListener('click', function() {
+          showServiceQualityMetricChart(metric.id, metric.name);
+        });
+        
+        metricsGrid.appendChild(metricCard);
+      });
+      
+      // 更新服务质量图表
+      updateServiceQualityChart();
+    }
+
+    // 显示服务质量指标折线图
+    function showServiceQualityMetricChart(metricId, metricName) {
+      // 隐藏指标网格和主图表，显示单个指标图表
+      serviceQualityMetricsContainer.style.display = 'none';
+      serviceQualityMetricChartContainer.style.display = 'block';
+      serviceQualityBackBtn.style.display = 'block';
+      
+      // 更新图表标题
+      document.getElementById('service-quality-metric-chart-title').textContent = `${metricName} - 历史趋势`;
+      
+      const historyData = serviceQualityHistory[metricId] || [];
+      const labels = Array.from({length: historyData.length}, (_, i) => 
+        `周期 ${currentPeriod - historyData.length + i + 1}`);
+      
+      const ctx = document.getElementById('service-quality-metric-chart').getContext('2d');
+      
+      // 销毁现有图表
+      if (serviceQualityMetricChart) {
+        serviceQualityMetricChart.destroy();
+      }
+      
+      // 计算图表范围
+      const maxValue = Math.max(...historyData);
+      const minValue = Math.min(...historyData);
+      const paddingTop = maxValue * 0.2;
+      const paddingBottom = minValue > 0 ? minValue * 0.2 : 0;
+      
+      const metricConfig = SERVICE_QUALITY_METRICS.find(m => m.id === metricId);
+      
+      serviceQualityMetricChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['周期 1'],
+          datasets: [{
+            label: metricName,
+            data: historyData.length > 0 ? historyData : [0],
+            borderColor: metricConfig?.borderColor || '#3498db',
+            backgroundColor: metricConfig?.color || 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '周期数'
+              },
+              min: Math.max(1, currentPeriod - 4),
+              max: currentPeriod
+            },
+            y: {
+              title: {
+                display: true,
+                text: metricConfig?.unit || ''
+              },
+              beginAtZero: minValue >= 0,
+              suggestedMin: Math.max(0, minValue - paddingBottom),
+              suggestedMax: maxValue + paddingTop
+            }
+          }
+        }
+      });
+    }
+
+    // 更新系统指标
+    function updateSystemMetrics(data) {
+      // 计算系统指标
+      const totalTransportCount = vehicles.reduce((sum, v) => sum + (v.metrics.completedOrders || 0), 0);
+      const totalWeight = vehicles.reduce((sum, v) => sum + (v.metrics.totalWeight || 0), 0);
+      const totalEmptyMileage = vehicles.reduce((sum, v) => sum + (v.metrics.emptyDistance || 0), 0);
+      const totalUtilization = vehicles.reduce((sum, v) => sum + (v.metrics.mileage_utilization_rate || 0), 0);
+      const avgUtilization = vehicles.length > 0 ? totalUtilization / vehicles.length : 0;
+      
+      // 总代价计算（假设为总碳排放）
+      const totalCost = vehicles.reduce((sum, v) => sum + (v.metrics.carbonEmission || 0), 0);
+      
+      // 合并系统性能指标和计算指标
+      const systemData = {
+        ...data,
+        totalCost,
+        totalTransportCount,
+        totalWeight,
+        totalEmptyMileage,
+        avgUtilization
+      };
+      
+      // 更新系统指标网格
+      const metricsGrid = document.getElementById('system-metrics-grid');
+      metricsGrid.innerHTML = '';
+      
+      const systemDisplayMetrics = [
+        ...SYSTEM_METRICS,
+        { id: 'totalCost', name: '系统总代价', unit: '吨', color: 'rgba(52, 152, 219, 0.8)', borderColor: '#3498db' },
+        { id: 'totalTransportCount', name: '总运输次数', unit: '次', color: 'rgba(46, 204, 113, 0.8)', borderColor: '#2ecc71' },
+        { id: 'totalWeight', name: '总运量', unit: '吨', color: 'rgba(241, 196, 15, 0.8)', borderColor: '#f1c40f' },
+        { id: 'totalEmptyMileage', name: '总空载里程', unit: '千米', color: 'rgba(231, 76, 60, 0.8)', borderColor: '#e74c3c' },
+        { id: 'avgUtilization', name: '平均利用率', unit: '', color: 'rgba(230, 126, 34, 0.8)', borderColor: '#e67e22' }
+      ];
+      
+      systemDisplayMetrics.forEach(metric => {
+        const value = systemData[metric.id] || 0;
+        let formattedValue = value;
+        let displayUnit = metric.unit;
+        
+        if (typeof value === 'number') {
+          if (metric.id.includes('Utilization')) {
+            formattedValue = (value * 100).toFixed(2);
+            displayUnit = '%';
+          } else {
+            formattedValue = value.toFixed(2);
+          }
+        }
+        
+        const metricCard = document.createElement('div');
+        metricCard.className = 'system-metric-card';
+        metricCard.dataset.metricId = metric.id;
+        metricCard.style.borderLeft = `3px solid ${metric.borderColor}`;
+        metricCard.innerHTML = `
+          <h4>${metric.name}</h4>
+          <div>
+            <span class="value">${formattedValue}</span>
+            <span class="unit">${displayUnit}</span>
+          </div>
+        `;
+        
+        // 添加点击事件，显示该指标的折线图
+        metricCard.addEventListener('click', function() {
+          showSystemMetricChart(metric.id, metric.name);
+        });
+        
+        metricsGrid.appendChild(metricCard);
+      });
+      
+      // 更新图表
+      updateSystemChart();
+    }
+    
+    // 显示系统指标折线图
+    function showSystemMetricChart(metricId, metricName) {
+      // 隐藏系统指标网格和主图表，显示单个指标图表
+      systemMetricsContainer.style.display = 'none';
+      metricChartContainer.style.display = 'block';
+      systemBackBtn.style.display = 'block';
+      
+      // 更新图表标题
+      document.getElementById('metric-chart-title').textContent = `${metricName} - 历史趋势`;
+      
+      const historyData = systemMetricsHistory[metricId] || [];
+      const labels = Array.from({length: historyData.length}, (_, i) => 
+        `周期 ${currentPeriod - historyData.length + i + 1}`);
+      
+      const ctx = document.getElementById('metric-chart').getContext('2d');
+      
+      // 销毁现有图表
+      if (metricChart) {
+        metricChart.destroy();
+      }
+      
+      // 计算图表范围
+      const maxValue = Math.max(...historyData);
+      const minValue = Math.min(...historyData);
+      const paddingTop = maxValue * 0.2;
+      const paddingBottom = minValue > 0 ? minValue * 0.2 : 0;
+      
+      const metricConfig = [...SYSTEM_METRICS, 
+        { id: 'totalCost', name: '系统总代价', unit: '吨', borderColor: '#3498db' },
+        { id: 'totalTransportCount', name: '总运输次数', unit: '次', borderColor: '#2ecc71' },
+        { id: 'totalWeight', name: '总运量', unit: '吨', borderColor: '#f1c40f' },
+        { id: 'totalEmptyMileage', name: '总空载里程', unit: '千米', borderColor: '#e74c3c' },
+        { id: 'avgUtilization', name: '平均利用率', unit: '', borderColor: '#e67e22' }
+      ].find(m => m.id === metricId);
+      
+      metricChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['周期 1'],
+          datasets: [{
+            label: metricName,
+            data: historyData.length > 0 ? historyData : [0],
+            borderColor: metricConfig?.borderColor || '#3498db',
+            backgroundColor: metricConfig?.color || 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '周期数'
+              },
+              min: Math.max(1, currentPeriod - 4),
+              max: currentPeriod
+            },
+            y: {
+              title: {
+                display: true,
+                text: metricConfig?.unit || ''
+              },
+              beginAtZero: minValue >= 0,
+              suggestedMin: Math.max(0, minValue - paddingBottom),
+              suggestedMax: maxValue + paddingTop
+            }
+          }
+        }
+      });
+    }
+
+    // 更新散点图
+    function updateScatterChart() {
+      const scatterMetric = SCATTER_METRICS[currentScatterMetric];
+      if (!scatterMetric || !scatterChart) return;
+      
+      const scatterData = vehicles.map(vehicle => ({
+        x: vehicle.metrics[scatterMetric.xAxis] || 0,
+        y: vehicle.metrics[scatterMetric.yAxis] || 0,
+        label: vehicle.UUID.substring(0, 6)
+      }));
+      
+      // 计算坐标轴范围
+      const xValues = scatterData.map(d => d.x);
+      const yValues = scatterData.map(d => d.y);
+      const maxX = Math.max(...xValues);
+      const minX = Math.min(...xValues);
+      const maxY = Math.max(...yValues);
+      const minY = Math.min(...yValues);
+      
+      const paddingX = maxX * 0.2;
+      const paddingY = maxY * 0.2;
+      
+      scatterChart.data.datasets[0].data = scatterData;
+      scatterChart.options.scales.x.title.text = scatterMetric.xLabel;
+      scatterChart.options.scales.y.title.text = scatterMetric.yLabel;
+      
+      // 设置坐标轴范围
+      scatterChart.options.scales.x.suggestedMin = minX - paddingX;
+      scatterChart.options.scales.x.suggestedMax = maxX + paddingX;
+      scatterChart.options.scales.y.suggestedMin = minY - paddingY;
+      scatterChart.options.scales.y.suggestedMax = maxY + paddingY;
+      
+      scatterChart.update();
+    }
+
+    // 初始化图表
+    function initCharts() {
+      // 系统图表
+      const systemCtx = document.getElementById('system-chart').getContext('2d');
+      systemChart = new Chart(systemCtx, {
+        type: 'bar',
+        data: {
+          labels: periodLabels,
+          datasets: SYSTEM_METRICS.map(metric => ({
+            label: metric.name,
+            data: [],
+            backgroundColor: metric.color,
+            borderColor: metric.borderColor,
+            borderWidth: 1
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+      
+      // 散点图
+      const scatterCtx = document.getElementById('scatter-chart').getContext('2d');
+      scatterChart = new Chart(scatterCtx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: '车辆',
+            data: [],
+            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+            borderColor: 'rgba(52, 152, 219, 1)',
+            borderWidth: 1,
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'X轴'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Y轴'
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `车辆: ${context.raw.label}`;
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      // 服务质量图表
+      const serviceQualityCtx = document.getElementById('service-quality-chart').getContext('2d');
+      serviceQualityChart = new Chart(serviceQualityCtx, {
+        type: 'bar',
+        data: {
+          labels: periodLabels,
+          datasets: SERVICE_QUALITY_METRICS.map(metric => ({
+            label: metric.name,
+            data: [],
+            backgroundColor: metric.color,
+            borderColor: metric.borderColor,
+            borderWidth: 1
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // 更新系统图表
+    function updateSystemChart() {
+      if (!systemChart) return;
+      
+      SYSTEM_METRICS.forEach((metric, index) => {
+        const historyData = systemMetricsHistory[metric.id] || [];
+        systemChart.data.datasets[index].data = historyData;
+      });
+      
+      // 更新周期标签
+      const historyLength = systemMetricsHistory[SYSTEM_METRICS[0]?.id]?.length || 5;
+      const labels = Array.from({length: historyLength}, (_, i) => 
+        `周期 ${currentPeriod - historyLength + i + 1}`);
+      
+      systemChart.data.labels = labels;
+      systemChart.update();
+    }
+
+    // 更新服务质量图表
+    function updateServiceQualityChart() {
+      if (!serviceQualityChart) return;
+      
+      SERVICE_QUALITY_METRICS.forEach((metric, index) => {
+        const historyData = serviceQualityHistory[metric.id] || [];
+        serviceQualityChart.data.datasets[index].data = historyData;
+      });
+      
+      // 更新周期标签
+      const historyLength = serviceQualityHistory[SERVICE_QUALITY_METRICS[0]?.id]?.length || 5;
+      const labels = Array.from({length: historyLength}, (_, i) => 
+        `周期 ${currentPeriod - historyLength + i + 1}`);
+      
+      serviceQualityChart.data.labels = labels;
+      serviceQualityChart.update();
+    }
+
+    // 显示更新提示
+    function showUpdateNotification() {
+      updateNotification.classList.add('show');
+      setTimeout(() => {
+        updateNotification.classList.remove('show');
+      }, 2000);
+    }
+  </script>
 </body>
 </html>

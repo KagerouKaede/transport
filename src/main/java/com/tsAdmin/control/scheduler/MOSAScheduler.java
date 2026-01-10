@@ -195,7 +195,7 @@ public class MOSAScheduler extends BaseScheduler
         // 将最终分配方案同步到车辆对象中
         syncAssignmentsToCars(finalAssignments, CarManager.carMap.values());
          // ========== 第八步：更新 CarStat！==========
-       updateCarStats(finalAssignments); // ← 新增方法
+        updateCarStats(finalAssignments); // 更新CarStatistics对象
 
         // 返回最终分配方案
         return finalAssignments;
@@ -759,21 +759,22 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
 
     
     // ===== 新增方法：更新 CarStat =====
-public void updateCarStats(List<Assignment> assignments) {
-    for (Assignment assignment : assignments) {
-        Car car = CarManager.carMap.get(assignment.getCar().getUUID());
-        if (car == null) continue;
+    public void updateCarStats(List<Assignment> assignments) {
+        for (Assignment assignment : assignments) {
+            Car car = CarManager.carMap.get(assignment.getCar().getUUID());
+            if (car == null) continue;
 
-        ObjectiveVector vec = evaluator.evaluateAll(assignment);
-        CarStatistics stat = car.getStatistics();
-        if(stat!=null) {
-            stat.setWaitingTime(vec.getWaitingTime());
-            stat.setEmptyDistance(vec.getEmptyDistance());
-            stat.setWastedLoad(vec.getLoadWaste());
-            stat.setTotalWeight(vec.getDeliveredTonnage());
-            stat.setCarbonEmission(vec.getCarbonEmission());
+            ObjectiveVector vec = evaluator.evaluateAll(assignment);
+            CarStatistics stat = car.getStatistics();
+            if(stat!=null) {
+                stat.setWaitingTime(vec.getWaitingTime());
+                stat.setEmptyDistance(vec.getEmptyDistance());
+                stat.setWastedLoad(vec.getLoadWaste());
+                stat.setTotalWeight(vec.getDeliveredTonnage());
+                stat.setCarbonEmission(vec.getCarbonEmission());
+                stat.setTotalDistance(evaluator.getTotalDistance(assignment.getCar(), assignment.getNodeList()));
+            }
         }
     }
-}
 }
 

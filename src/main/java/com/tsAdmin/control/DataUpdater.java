@@ -1,6 +1,7 @@
 package com.tsAdmin.control;
 
 import com.tsAdmin.common.ConfigLoader;
+import com.tsAdmin.control.manager.DemandManager;
 import com.tsAdmin.control.manager.PoiManager;
 import com.tsAdmin.control.scheduler.*;
 
@@ -28,7 +29,11 @@ public class DataUpdater implements Runnable
             // 这里开始数据更新逻辑
 
             PoiManager.update();
-            scheduler.schedule();
+
+            if (!DemandManager.isEmpty())
+            {
+                scheduler.schedule();
+            }
 
             // 这里结束数据更新逻辑
 
