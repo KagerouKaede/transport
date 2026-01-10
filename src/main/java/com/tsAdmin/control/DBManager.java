@@ -1,6 +1,7 @@
 package com.tsAdmin.control;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -136,21 +137,34 @@ public class DBManager
         try
         {
             List<Map<String, Object>> carList = new ArrayList<>();
-            String sql = "SELECT UUID, type, maxload, maxvolume, location_lat, location_lon FROM car";
-            List<Record> rawData = Db.find(sql);
+            String sql = "SELECT UUID,location_lat,location_lon,maxload, maxvolume,load,volume,currState,preState,waitingTime,emptyDistance,wastedLoad,totalWeight,carbonEmission,totalDistance,completedOrders,averageOrderCycle FROM car WHERE sandbox_UUID = ?";
+            List<Record> rawData = Db.find(sql, ConfigLoader.getConfigUUID());
 
             if (rawData != null && !rawData.isEmpty())
             {
                 for (Record record : rawData)
                 {
-                    Map<String, Object> element = Map.of(
-                        "UUID", record.get("UUID"),
-                        "type", record.get("type"),
-                        "maxload", record.get("maxload"),
-                        "maxvolume", record.get("maxvolume"),
-                        "lat", record.get("location_lat"),
-                        "lon", record.get("location_lon")
-                    );
+                    Map<String, Object> element = new HashMap<>();
+                    
+                    // 添加所有SQL查询的字段到Map中
+                    element.put("UUID", record.get("UUID"));
+                    element.put("location_lat", record.get("location_lat"));
+                    element.put("location_lon", record.get("location_lon"));
+                    element.put("maxload", record.get("maxload"));
+                    element.put("maxvolume", record.get("maxvolume"));
+                    element.put("load", record.get("load"));
+                    element.put("volume", record.get("volume"));
+                    element.put("currState", record.get("currState"));
+                    element.put("preState", record.get("preState"));
+                    element.put("waitingTime", record.get("waitingTime"));
+                    element.put("emptyDistance", record.get("emptyDistance"));
+                    element.put("wastedLoad", record.get("wastedLoad"));
+                    element.put("totalWeight", record.get("totalWeight"));
+                    element.put("carbonEmission", record.get("carbonEmission"));
+                    element.put("totalDistance", record.get("totalDistance"));
+                    element.put("completedOrders", record.get("completedOrders"));
+                    element.put("averageOrderCycle", record.get("averageOrderCycle"));
+                    
                     carList.add(element);
                 }
             }
@@ -582,7 +596,7 @@ public class DBManager
             logger.error("Failed to save data to sandbox table", e);
             return false;
         }
-    }
+    }    
 
     /* ================== 以下内容会导致模拟时无法保证情况相同，暂时废弃 ================== */
 

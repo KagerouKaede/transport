@@ -51,6 +51,14 @@ public class CarStatistics
         this.totalDistance = totalDistance;
     }
 
+    public void setCompletedOrders(int completedOrders) {
+        this.completedOrders = completedOrders;
+    }
+
+    public void setAverageOrderCycle(double averageOrderCycle) {
+        this.averageOrderCycle = averageOrderCycle;
+    }
+
     public void calculateLoad_utilization_rate(Car car) {
         int load = car.getLoad();
         int maxload = car.getMaxLoad();
