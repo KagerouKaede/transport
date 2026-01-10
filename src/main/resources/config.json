@@ -16,8 +16,14 @@
     },
     {
       "title": "调度器控制",
-      "content": [
-        "MultiObjective.enabled_targets"
+      "content":
+      [
+        "DataUpdater.applied_scheduler",
+        "MultiObjective.enable_total_wait_time",
+        "MultiObjective.enable_empty_distance",
+        "MultiObjective.enable_vehicle_utilization",
+        "MultiObjective.enable_total_weight",
+        "MultiObjective.enable_carbon_emission"
       ]
     },
     {
@@ -164,19 +170,35 @@
       "value": 5,
       "range": [1, 100]
     },
-    "MultiObjective.enabled_targets": {
-      "name": "多目标选择器",
-      "desc": "选择多目标优化指标，格式为[总等待时间,总空驶里程,车辆利用率,总运输重量,总碳排]",
-      "type": "BooleanArray",
-      "value": ["true", "true", "true", "true", "true"],
-      "allow": ["true", "false"]
+    "MultiObjective.enable_total_wait_time": {
+    "name": "总等待时间",
+    "desc": "是否将订单总等待时间作为优化目标",
+    "type": "Boolean",
+    "value": true
     },
-    "MultiObjective.consider_wait_time": {
-      "name": "...",
-      "desc": "...",
+    "MultiObjective.enable_empty_distance": {
+      "name": "总空驶里程",
+      "desc": "是否将车辆总空驶里程作为优化目标",
       "type": "Boolean",
-      "value": true,
-      "allow": [true, false]
+      "value": true
+    },
+    "MultiObjective.enable_vehicle_utilization": {
+      "name": "车辆利用率",
+      "desc": "是否将车辆整体利用率作为优化目标",
+      "type": "Boolean",
+      "value": true
+    },
+    "MultiObjective.enable_total_weight": {
+      "name": "总运输重量",
+      "desc": "是否将完成运输的总重量作为优化目标",
+      "type": "Boolean",
+      "value": true
+    },
+    "MultiObjective.enable_carbon_emission": {
+      "name": "总碳排放",
+      "desc": "是否将运输过程中的碳排放作为优化目标",
+      "type": "Boolean",
+      "value": true
     },
     "Event.global_enabled": {
       "name": "事件启用",

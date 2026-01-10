@@ -1,5 +1,5 @@
 // 事件管理器模块
-import { WeatherEffectLayer } from './weather-layer.js';
+import { WeatherEffectLayer } from '/weather-layer.js';
 export class EventManager {
     constructor(map, vehicles, functions) {
         this.map = map;
@@ -30,10 +30,10 @@ export class EventManager {
         
         // 事件图标
         this.eventIcons = {
-            accident: './resources/Accident.png',
-            roadClosureStart: './resources/RoadClosureStart.png',
-            roadClosureEnd: './resources/RoadClosureEnd.png',
-            trafficJam: './resources/TrafficJam.png'
+            accident: '/resources/Accident.png',
+            roadClosureStart: '/resources/RoadClosureStart.png',
+            roadClosureEnd: '/resources/RoadClosureEnd.png',
+            trafficJam: '/resources/TrafficJam.png'
         };
         
         // 时间映射配置
@@ -516,7 +516,7 @@ export class EventManager {
                 // 恢复车辆图标
                 const carIcon = new AMap.Icon({
                     size: new AMap.Size(16, 16),
-                    image: './resources/CarIcon.png',
+                    image: '/resources/CarIcon.png',
                     imageSize: new AMap.Size(16, 16)
                 });
                 vehicle.marker.setIcon(carIcon);
@@ -809,7 +809,7 @@ export class EventManager {
                     vehicle.accidentEvent = null;
                     const carIcon = new AMap.Icon({
                         size: new AMap.Size(16, 16),
-                        image: './resources/CarIcon.png',
+                        image: '/resources/CarIcon.png',
                         imageSize: new AMap.Size(16, 16)
                     });
                     vehicle.marker.setIcon(carIcon);
@@ -1075,7 +1075,7 @@ addAccidentInfoWindow(event, vehicle) {
                     // 恢复车辆图标
                     const carIcon = new AMap.Icon({
                         size: new AMap.Size(16, 16),
-                        image: './resources/CarIcon.png',
+                        image: '/resources/CarIcon.png',
                         imageSize: new AMap.Size(16, 16)
                     });
                     vehicle.marker.setIcon(carIcon);

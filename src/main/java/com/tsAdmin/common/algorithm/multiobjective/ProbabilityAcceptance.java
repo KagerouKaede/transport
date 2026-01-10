@@ -110,7 +110,6 @@ public class ProbabilityAcceptance
             // 返回接受结果，概率为1，原因为支配其他解
             return new AcceptanceResult(true, 1.0, AcceptanceReason.DOMINATES_OTHERS);
         }
-
         // ========== 情况 2：新解被某些旧解支配 ========== 
         if (analysis.isDominated())
         {
@@ -129,10 +128,9 @@ public class ProbabilityAcceptance
                 AcceptanceReason.DOMINATED  // 原因为被支配
             );
         }
-
         // ========== 情况 3：新解与所有旧解互不支配 ========== 
         // （即既不支配任何旧解，也不被任何旧解支配）
-        // 这是典型的“互补支配”或“非支配”情况
+      
         // 新解互不支配 → 总是接受
         return new AcceptanceResult(true, 1.0, AcceptanceReason.NON_DOMINATED);
     }

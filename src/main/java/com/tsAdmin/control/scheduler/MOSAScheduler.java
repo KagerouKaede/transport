@@ -91,10 +91,7 @@ public class MOSAScheduler extends BaseScheduler
         // 创建概率接受机制，传入归一化器（共享同一个归一化器）
         this.acceptance = new ProbabilityAcceptance(normalizer);
              // 从配置加载目标开关
-        this.enabledObjectives = ConfigLoader.getBooleanArray("MultiObjective.enabled_targets");
-        if (this.enabledObjectives == null || this.enabledObjectives.length != 5) {
-            this.enabledObjectives = new boolean[]{true, true, true, true, true}; // 默认全开
-        }
+       this.enabledObjectives = ConfigLoader.getEnabledMultiObjectives();
         this.evaluator.setEnabledObjectives(this.enabledObjectives); // 让 evaluator 知道哪些目标启用
     
     }
@@ -160,17 +157,17 @@ public class MOSAScheduler extends BaseScheduler
             ObjectiveVector newVector = calculateTotalObjectiveVector(newAssignments);
 
             // 5.3 分析新解与非支配集的关系
-            NonDominatedSet.AddAnalysis analysis = nonDominatedSet.analyzeAdd(newVector);
+            NonDominatedSet.AddAnalysis analysis = nonDominatedSet.analyzeAdd(newVector);//分析
 
             // 5.4 计算接受概率
             ProbabilityAcceptance.AcceptanceResult result = acceptance.calculateMultiObjectiveAcceptance(
-                newVector, nonDominatedSet, temperature, analysis);
+                newVector, nonDominatedSet, temperature, analysis);//决策
 
             // 5.5 如果接受，更新非支配集
             if (result.isAccepted()) {
                 // 强制添加新解（会自动删除被支配的旧解）
-                nonDominatedSet.forceAdd(newVector, newAssignments);
-                updateNormalizer();
+                nonDominatedSet.forceAdd(newVector, newAssignments);//更新
+                updateNormalizer();//同步
             }
             // 5.6降温
             // 按照冷却率降低温度：新温度 = 旧温度 × 冷却率
@@ -309,7 +306,7 @@ private List<Assignment> findIdealPointSolution(boolean[] selectedObjectives) {
     List<MultiObjectiveEvaluator.ObjectiveType> types = new ArrayList<>();
     MultiObjectiveEvaluator.ObjectiveType[] allTypes = MultiObjectiveEvaluator.ObjectiveType.values();
     
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < selectedObjectives.length && i < allTypes.length; i++) {
         if (selectedObjectives[i]) {
             types.add(allTypes[i]);
         }

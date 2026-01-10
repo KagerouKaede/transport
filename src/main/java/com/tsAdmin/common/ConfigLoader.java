@@ -3,6 +3,7 @@ package com.tsAdmin.common;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +37,7 @@ public final class ConfigLoader
         try
         {
             // 当前配置已是要使用的配置且并不强制重加载，跳过加载过程
-            if (!reload && configUUID == uuid)
+            if (!reload &&Objects.equals(configUUID, uuid))
             {
                 logger.trace("Configuration(UUID: {}) applied with no change", uuid);
                 return true;
@@ -187,35 +188,17 @@ public final class ConfigLoader
             return defaultValue;
         }
     }
-        /**
-     * 获取布尔数组配置项（支持 ["true", "false", ...] 格式）
-     */
-    public static boolean[] getBooleanArray(String key) {
-        try {
-            JsonNode valueNode = getNode(key);
-            if (valueNode == null || !valueNode.isArray()) {
-                logger.warn("Key [{}] is not a valid array in configuration(UUID: {})", key, configUUID);
-                return null;
-            }
+      
+    public static boolean[] getEnabledMultiObjectives() {
+    return new boolean[] {
+        getBoolean("MultiObjective.enable_total_wait_time", true),
+        getBoolean("MultiObjective.enable_empty_distance", true),
+        getBoolean("MultiObjective.enable_vehicle_utilization", true),
+        getBoolean("MultiObjective.enable_total_weight", true),
+        getBoolean("MultiObjective.enable_carbon_emission", true)
+    };
+}
 
-            boolean[] result = new boolean[valueNode.size()];
-            for (int i = 0; i < valueNode.size(); i++) {
-                JsonNode item = valueNode.get(i);
-                // 支持字符串 "true"/"false" 或直接布尔值
-                if (item.isTextual()) {
-                    result[i] = "true".equalsIgnoreCase(item.asText().trim());
-                } else if (item.isBoolean()) {
-                    result[i] = item.asBoolean();
-                } else {
-                    result[i] = false; // 默认 false
-                }
-            }
-            return result;
-        } catch (Exception e) {
-            logger.error("Failed to get boolean array for key [{}] in configuration(UUID: {})", key, configUUID, e);
-            return null;
-        }
-    }
 }
 
 
