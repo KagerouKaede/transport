@@ -71,6 +71,6 @@ public abstract class Purchaser extends Poi
         }
         if (targetUpstream == null) return;
 
-        demand = DemandManager.generateDemand(this, targetUpstream, quantity);
+        demand = DemandManager.generateDemand(targetUpstream, this, quantity);
     }
 }

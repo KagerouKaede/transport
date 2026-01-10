@@ -558,6 +558,7 @@ class SandboxManager
                     const result = await response.json();
                     if (result.success) {
                         this.toast('success', '正在进入沙箱...');
+                        window.open('/map.html');
                     } else {
                         this.toast('error', result.message || '进入沙箱失败');
                     }

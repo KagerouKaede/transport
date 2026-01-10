@@ -138,7 +138,7 @@ public class DBManager
         try
         {
             List<Map<String, Object>> carList = new ArrayList<>();
-            String sql = "SELECT UUID, type, maxload, maxvolume, location_lat, location_lon FROM car";
+            String sql = "SELECT UUID, maxload, maxvolume, location_lat, location_lon FROM car";
             List<Record> rawData = Db.find(sql);
 
             if (rawData != null && !rawData.isEmpty())
@@ -147,7 +147,6 @@ public class DBManager
                 {
                     Map<String, Object> element = Map.of(
                         "UUID", record.get("UUID"),
-                        "type", record.get("type"),
                         "maxload", record.get("maxload"),
                         "maxvolume", record.get("maxvolume"),
                         "lat", record.get("location_lat"),

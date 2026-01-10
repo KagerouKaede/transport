@@ -118,9 +118,7 @@
     color: #4a5568;
     font-size: 14px;
     line-height: 1.4;
-    margin-bottom: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #e2e8f0;
     text-align: left;
     align-self: flex-start;
     flex: 1;
@@ -129,6 +127,8 @@
 .config-item-value {
     display: flex;
     align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
     gap: 8px;
     flex-wrap: wrap;
 }
@@ -183,7 +183,7 @@
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 16px;
-    margin-bottom: 24px;
+    margin: 16px 0;
 }
 
 .config-info-item {
