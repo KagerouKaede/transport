@@ -18,6 +18,16 @@ import com.tsAdmin.model.Car;  // 导入车辆模型类
  */
 public class MultiObjectiveEvaluator
 {
+
+    private boolean[] enabledObjectives = {true, true, true, true, true}; // 默认全开
+        /**
+         * 设置哪些目标被启用（长度必须为5）
+         */
+        public void setEnabledObjectives(boolean[] enabled) {
+            if (enabled != null && enabled.length == 5) {
+                this.enabledObjectives = enabled.clone();
+            }
+        }
     /**
      * 目标类型枚举：为每个目标标记"是否以最小化为目标"
      * 若 isMinimize=false，则表示这是一个最大化指标（例如运量），在比较/归一化时会自动取相反数
@@ -244,7 +254,28 @@ public class MultiObjectiveEvaluator
      * 便捷方法，直接从Assignment对象中提取车辆和路径节点信息
      */
     public ObjectiveVector evaluateAll(Assignment assignment) {
-        return evaluateAll(assignment.getCar(), assignment.getNodeList());
+         RouteMetrics metrics = computeRouteMetrics(assignment.getCar(), assignment.getNodeList());
+
+    EnumMap<ObjectiveType, Double> values = new EnumMap<>(ObjectiveType.class);
+    ObjectiveType[] types = ObjectiveType.values();
+    double[] rawValues = {
+        metrics.waitingTime,
+        metrics.emptyDistance,
+        metrics.loadWaste,
+        metrics.totalTonnage,
+        metrics.carbonEmission
+    };
+
+    for (int i = 0; i < 5; i++) {
+        if (enabledObjectives[i]) {
+            values.put(types[i], rawValues[i]);
+        } else {
+            // 未启用的目标设为 0，使其不参与支配判断和归一化
+            values.put(types[i], 0.0);
+        }
+    }
+
+    return new ObjectiveVector(values);
     }
 
     // ========== 批量计算（用于多个车辆/分配方案） ==========

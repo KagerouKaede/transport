@@ -8,15 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.tsAdmin.common.ConfigLoader;
 import com.tsAdmin.common.PathNode;
 import com.tsAdmin.common.algorithm.multiobjective.*;
 import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator.ObjectiveVector;
-import com.tsAdmin.model.Assignment;
 import com.tsAdmin.model.*; 
-import com.tsAdmin.control.manager.*; 
-import com.tsAdmin.common.algorithm.multiobjective.DynamicNormalizer;
-import com.tsAdmin.common.algorithm.multiobjective.MultiObjectiveEvaluator;
-import com.tsAdmin.common.algorithm.multiobjective.ProbabilityAcceptance;
+import com.tsAdmin.control.manager.*;
 /**
  * 多目标模拟退火调度器（MOSA - Multi-Objective Simulated Annealing）
  * 整合所有模块，实现完整的MOSA算法流程
@@ -31,6 +28,7 @@ import com.tsAdmin.common.algorithm.multiobjective.ProbabilityAcceptance;
  */
 public class MOSAScheduler extends BaseScheduler
 {
+    private boolean[] enabledObjectives;
     // ========== MOSA算法核心组件 ==========
     
     /**
@@ -89,8 +87,16 @@ public class MOSAScheduler extends BaseScheduler
         this.evaluator = new MultiObjectiveEvaluator();  // 创建多目标评估器
         this.nonDominatedSet = new NonDominatedSet();  // 创建非支配集
         this.normalizer = new DynamicNormalizer();  // 创建动态归一化器
+        
         // 创建概率接受机制，传入归一化器（共享同一个归一化器）
         this.acceptance = new ProbabilityAcceptance(normalizer);
+             // 从配置加载目标开关
+        this.enabledObjectives = ConfigLoader.getBooleanArray("MultiObjective.enabled_targets");
+        if (this.enabledObjectives == null || this.enabledObjectives.length != 5) {
+            this.enabledObjectives = new boolean[]{true, true, true, true, true}; // 默认全开
+        }
+        this.evaluator.setEnabledObjectives(this.enabledObjectives); // 让 evaluator 知道哪些目标启用
+    
     }
 
     /**
@@ -179,12 +185,14 @@ public class MOSAScheduler extends BaseScheduler
             }
         }
 
-        // ========== 第六步：从非支配集中选择最终解 ==========
-        // ❌ 删除原来的 selectFinalSolution() 调用！
-        // 临时返回第一个解以满足接口
-        List<Assignment> finalAssignments = nonDominatedSet.isEmpty() ? 
-        new GreedyScheduler().schedule() : 
-        nonDominatedSet.get(0).getAssignments();
+                // ========== 第六步：根据配置自动选择最终解 ==========
+            List<Assignment> finalAssignments;
+            if (nonDominatedSet.isEmpty()) {
+                finalAssignments = new GreedyScheduler().schedule();
+            } else {
+                // 使用配置中的 enabledObjectives 作为偏好，自动选解
+                finalAssignments = findIdealPointSolution(this.enabledObjectives);
+            }
 
         // ========== 第七步：同步结果 ==========
         // 将最终分配方案同步到车辆对象中
