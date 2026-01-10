@@ -162,7 +162,7 @@ public void saveSandbox()
         boolean success = DBManager.saveSandbox(isNew, uuid, content);
 
         // 为防止修改了当前预设但在使用时因 UUID 相同而跳过，需要重载当前配置
-        if (!isNew && uuid == ConfigLoader.getConfigUUID() && success)
+        if (!isNew && uuid.equals(ConfigLoader.getConfigUUID())&& success)
         {
             ConfigLoader.use(uuid, true);
         }

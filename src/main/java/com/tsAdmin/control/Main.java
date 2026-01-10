@@ -26,7 +26,7 @@ public class Main
         try
         {
             // 打开浏览器
-            // java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
+            java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
         }
         catch (Exception e)
         {
