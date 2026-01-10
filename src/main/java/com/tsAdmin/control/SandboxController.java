@@ -72,12 +72,30 @@ public class SandboxController extends Controller
 
     /**
      * 获取默认配置
-     * <p>数据返回格式：{"success":{@code boolean}, "message":{@code String}}；
-     * 其中，成功时返回的 message 内容为：{"UUID":{@code String}, "content":{@code String(Json)}}
+     * <p>数据返回格式：{"success":{@code boolean}, "message":{@code String}}
      */
     public void getConfigTemplate()
     {
         ConfigLoader.use("0");
+        String config = ConfigLoader.getFullJson().toString();
+
+        try
+        {
+            reply(true, config);
+        }
+        catch (Exception e)
+        {
+            logger.error("Failed to get default config", e);
+            reply(false, "Failed to get default config, please check log to learn more");
+        }
+    }
+
+    /**
+     * 获取当前配置
+     * <p>数据返回格式：{"success":{@code boolean}, "message":{@code String}}
+     */
+    public void getEventConfig()
+    {
         String config = ConfigLoader.getFullJson().toString();
 
         try

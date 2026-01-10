@@ -14,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.jfinal.core.Controller;
 import com.jfinal.kit.JsonKit;
-
 import com.tsAdmin.common.PathNode;
 import com.tsAdmin.control.manager.CarManager;
 import com.tsAdmin.model.Car;
