@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.tsAdmin.control.scheduler.MOSAScheduler;
-import com.tsAdmin.model.Assignment;
+//import com.tsAdmin.control.scheduler.MOSAScheduler;
+//import com.tsAdmin.model.Assignment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,40 +51,40 @@ public class DataController extends Controller
     /**
      * 接收前端目标选择信号，从 Pareto 前沿中选择最优解
      */
-    public void selectParetoSolution() {
-        // 1. 获取前端传来的布尔数组
-        String[] objStrs = getParaValues("objectives");
-        if (objStrs == null || objStrs.length != 5) {
-            renderJson(Map.of("code", 400, "msg", "需提供5个目标的选择信号"));
-            return;
-        }
+    // public void selectParetoSolution() {
+    //     // 1. 获取前端传来的布尔数组
+    //     String[] objStrs = getParaValues("objectives");
+    //     if (objStrs == null || objStrs.length != 5) {
+    //         renderJson(Map.of("code", 400, "msg", "需提供5个目标的选择信号"));
+    //         return;
+    //     }
 
-        boolean[] selected = new boolean[5];
-        for (int i = 0; i < 5; i++) {
-            selected[i] = "true".equals(objStrs[i]) || "1".equals(objStrs[i]);
-        }
+    //     boolean[] selected = new boolean[5];
+    //     for (int i = 0; i < 5; i++) {
+    //         selected[i] = "true".equals(objStrs[i]) || "1".equals(objStrs[i]);
+    //     }
 
-        // 2. 获取 MOSAScheduler 实例
-        MOSAScheduler mosa = DataUpdater.getScheduler();
-        if (mosa == null) {
-            renderJson(Map.of("code", 500, "msg", "MOSA 调度器未运行"));
-            return;
-        }
+    //     // 2. 获取 MOSAScheduler 实例
+    //     MOSAScheduler mosa = DataUpdater.getScheduler();
+    //     if (mosa == null) {
+    //         renderJson(Map.of("code", 500, "msg", "MOSA 调度器未运行"));
+    //         return;
+    //     }
 
-        // 3. 执行理想点法筛选
-        List<Assignment> bestSolution = mosa.selectSolutionByObjectives(selected);
-        if (bestSolution == null || bestSolution.isEmpty()) {
-            renderJson(Map.of("code", 404, "msg", "无可用解"));
-            return;
-        }
+    //     // 3. 执行理想点法筛选
+    //     List<Assignment> bestSolution = mosa.selectSolutionByObjectives(selected);
+    //     if (bestSolution == null || bestSolution.isEmpty()) {
+    //         renderJson(Map.of("code", 404, "msg", "无可用解"));
+    //         return;
+    //     }
 
-        // 4. 同步新解到车辆，并更新 CarStatistics
-        mosa.syncAssignmentsToCars(bestSolution, CarManager.carMap.values());
-        mosa.updateCarStats(bestSolution); // 你已实现的方法
+    //     // 4. 同步新解到车辆，并更新 CarStatistics
+    //     mosa.syncAssignmentsToCars(bestSolution, CarManager.carMap.values());
+    //     mosa.updateCarStats(bestSolution); // 你已实现的方法
 
-        // 5. 返回成功
-        renderJson(Map.of("code", 200, "msg", "Pareto 解已更新"));
-    }
+    //     // 5. 返回成功
+    //     renderJson(Map.of("code", 200, "msg", "Pareto 解已更新"));
+    // }
 
     /**
      * 获取仪表盘数据

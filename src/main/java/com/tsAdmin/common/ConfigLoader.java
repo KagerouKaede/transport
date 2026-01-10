@@ -189,6 +189,35 @@ public final class ConfigLoader
             return defaultValue;
         }
     }
+        /**
+     * 获取布尔数组配置项（支持 ["true", "false", ...] 格式）
+     */
+    public static boolean[] getBooleanArray(String key) {
+        try {
+            JsonNode valueNode = getNode(key);
+            if (valueNode == null || !valueNode.isArray()) {
+                logger.warn("Key [{}] is not a valid array in configuration(UUID: {})", key, configUUID);
+                return null;
+            }
+
+            boolean[] result = new boolean[valueNode.size()];
+            for (int i = 0; i < valueNode.size(); i++) {
+                JsonNode item = valueNode.get(i);
+                // 支持字符串 "true"/"false" 或直接布尔值
+                if (item.isTextual()) {
+                    result[i] = "true".equalsIgnoreCase(item.asText().trim());
+                } else if (item.isBoolean()) {
+                    result[i] = item.asBoolean();
+                } else {
+                    result[i] = false; // 默认 false
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            logger.error("Failed to get boolean array for key [{}] in configuration(UUID: {})", key, configUUID, e);
+            return null;
+        }
+    }
 }
 
 
