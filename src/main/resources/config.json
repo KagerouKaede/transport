@@ -1,8 +1,14 @@
 {
-  "packs":
+  "info":
+  {
+    "sandbox_name": "Sandbox #0",
+    "create_time": "yyyy-MM-dd HH:mm:ss",
+    "simulation_cycle": 0
+  },
+  "groups":
   [
     {
-      "name": "系统参数",
+      "title": "系统参数",
       "content":
       [
         "Main.update_interval",
@@ -12,7 +18,7 @@
       ]
     },
     {
-      "name": "调度器控制",
+      "title": "调度器控制",
       "content":
       [
         "DataUpdater.applied_scheduler",
@@ -20,18 +26,18 @@
       ]
     },
     {
-      "name": "订单上下游",
+      "title": "订单上下游",
       "content":
       [
         "ResourcePlant.stock_growth_rate",
-        "ProcessingPlant.processing_loss",
-        "ProcessingPlant.processing_speed",
+        "ProcessPlant.processing_loss",
+        "ProcessPlant.processing_speed",
         "Purchaser.purchase_threshold",
         "Market.sales_rate"
       ]
     },
     {
-      "name": "随机事件",
+      "title": "随机事件",
       "content":
       [
         "Event.global_enabled",
@@ -73,6 +79,7 @@
     {
       "name": "后端更新间隔",
       "desc": "后端数据更新的时间间隔",
+      "const": false,
       "type": "Integer",
       "unit": "s",
       "value": 5,
@@ -82,6 +89,7 @@
     {
       "name": "随机种子",
       "desc": "控制全局随机数生成的种子，留空则由系统自动生成",
+      "const": true,
       "type": "Long",
       "value": null
     },
@@ -89,6 +97,7 @@
     {
       "name": "时间步进",
       "desc": "数据更新间隔所对应的现实时间流逝时长",
+      "const": false,
       "type": "Integer",
       "unit": "min",
       "value": 30
@@ -97,6 +106,7 @@
     {
       "name": "采用的调度器",
       "desc": "已废弃",
+      "const": false,
       "type": "Select",
       "value": "Greedy",
       "allow": ["Greedy", "SA"]
@@ -105,6 +115,7 @@
     {
       "name": "模拟车辆数",
       "desc": "参与模拟调度的车辆数量",
+      "const": true,
       "type": "Integer",
       "unit": "辆",
       "value": 100
@@ -113,6 +124,7 @@
     {
       "name": "每周期最大订单数",
       "desc": "每个周期生成订单的最大数量，达到该数值后厂商的下单请求将被拒绝",
+      "const": false,
       "type": "Integer",
       "value": 30
     },
@@ -120,24 +132,27 @@
     {
       "name": "生产厂库存增长率",
       "desc": "每周期库存增长量 = 剩余库存 * 增长率",
+      "const": false,
       "type": "Integer",
       "unit": "% /周期",
       "value": 10,
       "range": [1, 100]
     },
-    "ProcessingPlant.processing_loss":
+    "ProcessPlant.processing_loss":
     {
       "name": "加工厂加工损耗率",
       "desc": "由原材料到产物的加工损耗比率",
+      "const": false,
       "type": "Integer",
       "unit": "%",
       "value": 10,
       "range": [0, 99]
     },
-    "ProcessingPlant.processing_speed":
+    "ProcessPlant.processing_speed":
     {
       "name": "加工厂加工速度",
       "desc": "每周期加工量 = MIN(剩余原材料, 最大库存 * 加工速度)",
+      "const": false,
       "type": "Integer",
       "unit": "%",
       "value": 5,
@@ -147,6 +162,7 @@
     {
       "name": "厂商下单阈值",
       "desc": "厂商在当前没有未完成的购买订单且库存低于阈值时尝试生成订单",
+      "const": false,
       "type": "Integer",
       "unit": "%",
       "value": 50,
@@ -156,6 +172,7 @@
     {
       "name": "市场售卖速率",
       "desc": "每周期库存减少量 = 现有库存 * 售卖速率",
+      "const": false,
       "type": "Integer",
       "unit": "%",
       "value": 5,

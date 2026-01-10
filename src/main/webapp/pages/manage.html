@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/favicon.png" type="image/x-icon">
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/manage.css">
+  <script src="/javascript/manage.js"></script>
+  <title>调度沙箱管理</title>
+</head>
+
+<body>
+  <div id="app">
+    <div id="toast" class="hide"></div>
+    <div id="create-panel" class="hide">
+      <div class="create-panel-content">
+        <div class="create-panel-header">
+            <span>创建新沙箱</span>
+            <span class="create-panel-close">×</span>
+        </div>
+        <div class="create-panel-body" id="create-panel-body"></div>
+        <div class="create-panel-footer">
+            <button class="rect-button secondary" id="create-panel-cancel">取消</button>
+            <button class="rect-button primary" id="create-panel-submit">创建</button>
+        </div>
+    </div>
+    </div>
+    <div id="content-container">
+      <div class="panel" id="sandbox-panel">
+        <header class="panel-title">沙箱列表</header>
+        <ul id="sandbox-list">
+          <div class="sandbox-block" id="sandbox-empty-tips" style="height: 256px;">
+            <span>
+              📂<b>还没有已保存的沙箱数据</b><br><br>
+              请点击下方 <b>+</b> 按钮<br>
+              以默认预设创建数据沙箱
+            </span>
+          </div>
+        </ul>
+        <footer>
+          <button class="sandbox-block rect-button shining-button" id="create-btn">+</button>
+        </footer>
+      </div>
+      <div class="panel" id="config-panel">
+        <header class="panel-title">参数明细</header>
+        <ul id="config-content">
+          <div class="sandbox-block" id="config-empty-tips" style="height: calc(100% - 32px);">
+            <span>
+              📦<b>还没有选择任何数据沙箱</b><br><br>
+              请选择左侧列表任意数据沙箱<br>
+              以查看该沙箱的详细数据
+            </span>
+          </div>
+        </ul>
+        <footer>
+          <ul id="button-entry">
+            <li>
+                <button class="rect-button shining-button success" id="enter-btn">
+                    进入沙箱
+                </button>
+            </li>
+            <li>
+                <button class="rect-button shining-button" id="edit-btn">
+                    编辑配置
+                </button>
+            </li>
+            <li>
+                <button class="rect-button shining-button" id="create-from-copy-btn">
+                    复制新建
+                </button>
+            </li>
+            <li>
+                <button class="rect-button shining-button danger" id="remove-btn">
+                    删除沙箱
+                </button>
+            </li>
+          </ul>
+        </footer>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

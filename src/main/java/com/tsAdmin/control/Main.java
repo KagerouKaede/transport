@@ -24,7 +24,7 @@ public class Main
         try
         {
             // 打开浏览器
-            java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
+            // java.awt.Desktop.getDesktop().browse(new java.net.URI("http://localhost:8080"));
         }
         catch (Exception e)
         {
@@ -58,13 +58,11 @@ public class Main
     {
         logger.info("Stopping simulation...");
 
-        // 停止 DataUpdater 线程
         if (updater != null)
         {
             updater.stop();
         }
 
-        // 等待线程结束（最多等待5秒）
         if (updaterThread != null && updaterThread.isAlive())
         {
             updaterThread.join(5000);
@@ -73,8 +71,7 @@ public class Main
                 logger.warn("DataUpdater thread did not stop within timeout");
             }
         }
-        
-        // 保存各个 Manager 的数据
+
         PoiManager.onStop();
         CarManager.onStop();
         DemandManager.onStop();
