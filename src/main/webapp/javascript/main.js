@@ -12,7 +12,9 @@ const POIIconSrc = {
     "pharmaProcessor": '/resources/PharmaceuticalProcessor.png',
     "steelProcessor" : '/resources/SteelProcessor.png',
     "woodProcessor"  : '/resources/WoodProcessor.png',
-    "market": '/resources/Market.png'
+    "pharmamarket": '/resources/PharmaMarket.png',
+    "steelmarket": '/resources/SteelMarket.png',
+    "woodmarket": '/resources/WoodMarket.png'
 };
 
 const script = document.createElement('script');
@@ -353,7 +355,7 @@ function processWeatherConfig(backendConfig, frontendConfig) {
 // 获取事件配置
 async function fetchEventConfig() {
     try {
-        let url = new URL('/data/getEventConfig', window.location.origin);
+        let url = new URL('/sandbox/getEventConfig', window.location.origin);
         const response = await fetch(url);
         
         if (!response.ok) throw new Error('事件配置获取失败');
@@ -546,9 +548,9 @@ async function initPOI() {
         "ProcessPlant_PHARMA": "pharmaProcessor",
         "ProcessPlant_STEEL": "steelProcessor",
         "ProcessPlant_WOOD": "woodProcessor",
-        "Market_PHARMA": "market",  // 假设Market也有type字段
-        "Market_STEEL": "market",
-        "Market_WOOD": "market"
+        "Market_PHARMA": "pharmamarket",  // 假设Market也有type字段
+        "Market_STEEL": "steelmarket",
+        "Market_WOOD": "woodmarket"
         // 如果需要，可以添加Market类型的映射
     };
 
