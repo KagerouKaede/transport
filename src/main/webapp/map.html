@@ -649,6 +649,8 @@ function updateVehicleList(vehicleList) {
   function initCharts() {
     // 系统总代价图表 - 修改为自适应坐标轴
     const systemChartCtx = document.getElementById('system-chart').getContext('2d');
+    // 确保图表容器适应新的高度
+    document.getElementById('system-chart-container').style.height = '240px';
     systemChart = new Chart(systemChartCtx, {
       type: currentChartType,
       data: {
@@ -1113,8 +1115,6 @@ function updateVehicleList(vehicleList) {
         // 计算派生指标
         const idleRate = (busyTime + idleTime) > 0 ? (idleTime / (busyTime + idleTime)) * 100 : 0;
         const utilization = totalDistance > 0 ? ((totalDistance - emptyDistance) / totalDistance) * 100 : 0;
-        // console.log("利用率啦啦啦啦啦啦啦啦啦:", utilization);
-        // console.log("总里程:", totalDistance, "空驶里程:", emptyDistance);
         return {
           UUID: c.UUID,
           status: c.status || "AVAILABLE",
