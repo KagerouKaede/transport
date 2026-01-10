@@ -11,6 +11,7 @@ import com.tsAdmin.control.DBManager;
 import com.tsAdmin.control.Main;
 import com.tsAdmin.model.Car;
 import com.tsAdmin.model.Car.CarState;
+import com.tsAdmin.model.CarStatistics;
 
 public class CarManager
 {
@@ -44,23 +45,64 @@ public class CarManager
         }
         else
         {
-            // TODO: 车辆统计数据也需要存到数据库
+            // 从数据库读取车辆数据并恢复车辆状态和统计数据
             List<Map<String, Object>> dataList = DBManager.getCarList();
             for (Map<String, Object> data : dataList)
             {
                 String uuid = data.get("UUID").toString();
-                int maxLoad = (int)data.get("maxload");
-                int maxVolume = (int)data.get("maxvolume");
-                double lat = (double)data.get("lat");
-                double lon = (double)data.get("lon");
+                int maxLoad = getIntValue(data.get("maxload"));
+                int maxVolume = getIntValue(data.get("maxvolume"));
+                double lat = getDoubleValue(data.get("location_lat"));
+                double lon = getDoubleValue(data.get("location_lon"));
 
+                // 创建车辆对象
                 Car car = new Car(uuid, maxLoad, maxVolume, new Coordinate(lat, lon));
 
-                // 两次setState: 第一次将上一状态set为currState，第二次set会自动将其转移至prevState
-                car.setState(CarState.AVAILABLE);
-                car.setState(CarState.AVAILABLE);
-                car.setLoad(0);
-                car.setVolume(0);
+                // 设置车辆基本属性
+                int load = getIntValue(data.get("load"));
+                int volume = getIntValue(data.get("volume"));
+                car.setLoad(load);
+                car.setVolume(volume);
+
+                // 设置车辆状态
+                String currStateStr = data.get("currState") != null ? data.get("currState").toString() : null;
+                String prevStateStr = data.get("preState") != null ? data.get("preState").toString() : null;
+                
+                if (currStateStr != null)
+                {
+                    try
+                    {
+                        CarState currState = CarState.valueOf(currStateStr);
+                        CarState prevState = prevStateStr != null ? CarState.valueOf(prevStateStr) : CarState.AVAILABLE;
+                        
+                        // 先设置上一状态，再设置当前状态
+                        car.setState(prevState);
+                        car.setState(currState);
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        // 如果状态字符串无效，使用默认状态
+                        car.setState(CarState.AVAILABLE);
+                        car.setState(CarState.AVAILABLE);
+                    }
+                }
+                else
+                {
+                    // 如果状态为空，使用默认状态
+                    car.setState(CarState.AVAILABLE);
+                    car.setState(CarState.AVAILABLE);
+                }
+
+                // 设置车辆统计数据
+                CarStatistics statistics = car.getStatistics();
+                statistics.setWaitingTime(getDoubleValue(data.get("waitingTime")));
+                statistics.setEmptyDistance(getDoubleValue(data.get("emptyDistance")));
+                statistics.setWastedLoad(getDoubleValue(data.get("wastedLoad")));
+                statistics.setTotalWeight(getDoubleValue(data.get("totalWeight")));
+                statistics.setCarbonEmission(getDoubleValue(data.get("carbonEmission")));
+                statistics.setTotalDistance(getDoubleValue(data.get("totalDistance")));
+                statistics.setCompletedOrders(getIntValue(data.get("completedOrders")));
+                statistics.setAverageOrderCycle(getDoubleValue(data.get("averageOrderCycle")));
 
                 carMap.put(uuid, car);
             }
@@ -68,6 +110,46 @@ public class CarManager
     }
 
     public static void onStop() { DBManager.saveCarMap(carMap); }
+
+    /**
+     * 安全地从 Map 中获取整数值
+     * @param value 可能为 null 的值
+     * @return 整数值，如果为 null 则返回 0
+     */
+    private static int getIntValue(Object value)
+    {
+        if (value == null) return 0;
+        if (value instanceof Integer) return (Integer)value;
+        if (value instanceof Number) return ((Number)value).intValue();
+        try
+        {
+            return Integer.parseInt(value.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            return 0;
+        }
+    }
+
+    /**
+     * 安全地从 Map 中获取双精度浮点数值
+     * @param value 可能为 null 的值
+     * @return 双精度浮点数值，如果为 null 则返回 0.0
+     */
+    private static double getDoubleValue(Object value)
+    {
+        if (value == null) return 0.0;
+        if (value instanceof Double) return (Double)value;
+        if (value instanceof Number) return ((Number)value).doubleValue();
+        try
+        {
+            return Double.parseDouble(value.toString());
+        }
+        catch (NumberFormatException e)
+        {
+            return 0.0;
+        }
+    }
 
     /**
      * 生成随机方位点
