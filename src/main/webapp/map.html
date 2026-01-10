@@ -81,6 +81,17 @@
         <div class="vehicle-metrics-grid" id="vehicle-metrics-grid">
           <!-- 指标卡片将动态生成 -->
         </div>
+        
+        <!-- 车辆指标折线图容器 -->
+        <div id="vehicle-metric-chart-container" class="chart-container" style="display: none; height: 200px;">
+          <div class="chart-header">
+            <h3 id="vehicle-metric-chart-title" class="chart-title">车辆指标趋势</h3>
+            <div class="chart-actions">
+              <button id="close-vehicle-chart" class="chart-btn">返回</button>
+            </div>
+          </div>
+          <canvas id="vehicle-metric-chart"></canvas>
+        </div>
       </div>
     </div>
   </div>
@@ -113,11 +124,11 @@
       </div>
       
       <!-- 单个指标图表视图 -->
-      <div id="metric-chart-container" class="chart-container" style="display: none;">
+      <div id="metric-chart-container" class="chart-container" style="display: none; height: 200px;">
         <div class="chart-header">
           <h3 id="metric-chart-title" class="chart-title">指标详情</h3>
           <div class="chart-actions">
-            <button id="toggle-metric-chart-type" class="chart-btn">切换图表类型</button>
+            <button id="close-metric-chart" class="chart-btn">返回</button>
           </div>
         </div>
         <canvas id="metric-chart"></canvas>
@@ -156,24 +167,38 @@
   <!-- 服务质量指标面板 -->
   <div id="service-quality-panel" class="floating-panel service-quality-panel">
     <div class="panel-header">
+      <button class="back-btn" id="service-quality-back-btn" title="返回指标" style="display: none;">←</button>
       <h3 class="panel-title">服务质量指标</h3>
       <button class="close-btn" id="close-service-quality-panel" title="关闭">×</button>
     </div>
     
     <div class="panel-content">
-      <div class="system-metrics-grid" id="service-quality-metrics-grid">
-        <!-- 服务质量指标卡片将动态生成 -->
-      </div>
-      
-      <!-- 服务质量指标图表容器 -->
-      <div class="chart-container" id="service-quality-chart-container">
-        <div class="chart-header">
-          <h3 id="service-quality-chart-title" class="chart-title">服务质量指标趋势</h3>
-          <div class="chart-actions">
-            <button id="toggle-service-quality-chart-type" class="chart-btn">切换为折线图</button>
+      <!-- 服务质量指标视图 -->
+      <div id="service-quality-metrics-container" style="display: block;">
+        <div class="system-metrics-grid" id="service-quality-metrics-grid">
+          <!-- 服务质量指标卡片将动态生成 -->
+        </div>
+        
+        <!-- 服务质量指标图表容器 -->
+        <div class="chart-container" id="service-quality-chart-container">
+          <div class="chart-header">
+            <h3 id="service-quality-chart-title" class="chart-title">服务质量指标趋势</h3>
+            <div class="chart-actions">
+              <button id="toggle-service-quality-chart-type" class="chart-btn">切换为折线图</button>
           </div>
         </div>
         <canvas id="service-quality-chart"></canvas>
+      </div>
+      
+      <!-- 单个服务质量指标图表视图 -->
+      <div id="service-quality-metric-chart-container" class="chart-container" style="display: none; height: 200px;">
+        <div class="chart-header">
+          <h3 id="service-quality-metric-chart-title" class="chart-title">服务质量指标详情</h3>
+          <div class="chart-actions">
+            <button id="close-service-quality-metric-chart" class="chart-btn">返回</button>
+          </div>
+        </div>
+        <canvas id="service-quality-metric-chart"></canvas>
       </div>
     </div>
   </div>
@@ -202,9 +227,6 @@
       securityJsCode:"9858defc87670662758db011c95df7ac"
     };
   </script>
-  
-  <!-- 主JavaScript文件 -->
-  <script type="module" src="/javascript/main.js"></script>
   
   <script type="module">
     // map.html中的JavaScript部分更新
@@ -307,6 +329,8 @@
     let metricChart = null;
     let scatterChart = null;
     let serviceQualityChart = null;
+    let vehicleMetricChart = null;
+    let serviceQualityMetricChart = null;
     let currentChartType = 'bar';
     let currentMetricChartType = 'bar';
     let currentMetricId = 'totalCost';
@@ -334,6 +358,7 @@
     const closeServiceQualityPanelBtn = document.getElementById('close-service-quality-panel');
     const vehicleBackBtn = document.getElementById('vehicle-back-btn');
     const systemBackBtn = document.getElementById('system-back-btn');
+    const serviceQualityBackBtn = document.getElementById('service-quality-back-btn');
     const vehicleListContainer = document.getElementById('vehicle-list-container');
     const vehicleDetailContainer = document.getElementById('vehicle-detail-container');
     const systemMetricsContainer = document.getElementById('system-metrics-container');
@@ -341,8 +366,14 @@
     const systemChartContainer = document.getElementById('system-chart-container');
     const scatterChartContainer = document.getElementById('scatter-chart-container');
     const serviceQualityMetricsGrid = document.getElementById('service-quality-metrics-grid');
+    const serviceQualityMetricsContainer = document.getElementById('service-quality-metrics-container');
     const serviceQualityChartContainer = document.getElementById('service-quality-chart-container');
+    const serviceQualityMetricChartContainer = document.getElementById('service-quality-metric-chart-container');
+    const vehicleMetricChartContainer = document.getElementById('vehicle-metric-chart-container');
     const updateNotification = document.getElementById('update-notification');
+    const closeVehicleChartBtn = document.getElementById('close-vehicle-chart');
+    const closeMetricChartBtn = document.getElementById('close-metric-chart');
+    const closeServiceQualityMetricChartBtn = document.getElementById('close-service-quality-metric-chart');
 
     // 初始化
     document.addEventListener('DOMContentLoaded', function() {
@@ -414,6 +445,29 @@
       systemBackBtn.addEventListener('click', function() {
         showSystemMetrics();
       });
+      
+      serviceQualityBackBtn.addEventListener('click', function() {
+        showServiceQualityMetrics();
+      });
+      
+      // 图表返回按钮
+      if (closeVehicleChartBtn) {
+        closeVehicleChartBtn.addEventListener('click', function() {
+          hideVehicleMetricChart();
+        });
+      }
+      
+      if (closeMetricChartBtn) {
+        closeMetricChartBtn.addEventListener('click', function() {
+          showSystemMetrics();
+        });
+      }
+      
+      if (closeServiceQualityMetricChartBtn) {
+        closeServiceQualityMetricChartBtn.addEventListener('click', function() {
+          showServiceQualityMetrics();
+        });
+      }
       
       // 对比图按钮
       document.getElementById('open-comparison').addEventListener('click', function() {
@@ -570,6 +624,9 @@
       vehicleListContainer.style.display = 'block';
       vehicleDetailContainer.style.display = 'none';
       vehicleBackBtn.style.display = 'none';
+      
+      // 隐藏车辆指标图表
+      hideVehicleMetricChart();
     }
 
     // 显示系统指标
@@ -577,6 +634,19 @@
       systemMetricsContainer.style.display = 'block';
       metricChartContainer.style.display = 'none';
       systemBackBtn.style.display = 'none';
+    }
+
+    // 显示服务质量指标
+    function showServiceQualityMetrics() {
+      serviceQualityMetricsContainer.style.display = 'block';
+      serviceQualityMetricChartContainer.style.display = 'none';
+      serviceQualityBackBtn.style.display = 'none';
+    }
+
+    // 隐藏车辆指标图表
+    function hideVehicleMetricChart() {
+      vehicleMetricChartContainer.style.display = 'none';
+      document.getElementById('vehicle-metrics-grid').style.display = 'grid';
     }
 
     // 获取所有数据
@@ -785,57 +855,15 @@
       updateScatterChart();
     }
 
-    // 更新车辆统计指标
-    function updateCarStatistics(data) {
-      const metricsGrid = document.getElementById('car-stats-metrics-grid');
-      if (!metricsGrid) return;
-      
-      metricsGrid.innerHTML = '';
-      
-      CAR_STATISTICS_METRICS.forEach(metric => {
-        const value = data[metric.id] || 0;
-        let formattedValue = value;
-        let displayUnit = metric.unit;
-        
-        if (typeof value === 'number') {
-          if (metric.id.includes('Mean') || metric.id.includes('Variance')) {
-            formattedValue = value.toFixed(2);
-            if (metric.id.includes('Mean')) {
-              formattedValue = (value * 100).toFixed(2);
-              displayUnit = '%';
-            }
-          } else {
-            formattedValue = Math.round(value);
-          }
-        }
-        
-        const metricCard = document.createElement('div');
-        metricCard.className = 'system-metric-card';
-        metricCard.dataset.metricId = metric.id;
-        metricCard.style.borderLeft = `3px solid ${metric.borderColor}`;
-        metricCard.innerHTML = `
-          <h4>${metric.name}</h4>
-          <div>
-            <span class="value">${formattedValue}</span>
-            <span class="unit">${displayUnit}</span>
-          </div>
-        `;
-        
-        // 添加点击事件，显示该指标的折线图
-        metricCard.addEventListener('click', function() {
-          showMetricChart(metric.id, metric.name, carStatisticsHistory, '车辆统计指标');
-        });
-        
-        metricsGrid.appendChild(metricCard);
-      });
-    }
-
     // 显示车辆详情
     function showVehicleDetail(vehicle) {
       // 显示车辆详情，隐藏列表
       vehicleListContainer.style.display = 'none';
       vehicleDetailContainer.style.display = 'block';
       vehicleBackBtn.style.display = 'block';
+      
+      // 隐藏车辆指标图表
+      hideVehicleMetricChart();
       
       // 设置车辆标题和状态
       document.getElementById('vehicle-detail-title').querySelector('span').textContent = 
@@ -867,6 +895,7 @@
         const metricCard = document.createElement('div');
         metricCard.className = 'metric-card';
         metricCard.style.borderLeft = `3px solid ${metric.borderColor}`;
+        metricCard.dataset.metricId = metric.id;
         metricCard.innerHTML = `
           <h4>${metric.name}</h4>
           <div>
@@ -886,37 +915,25 @@
 
     // 显示车辆指标折线图
     function showVehicleMetricChart(vehicleId, metricId, metricName) {
-      // 隐藏其他视图，显示车辆详情中的图表容器
-      const chartContainer = document.createElement('div');
-      chartContainer.className = 'chart-container active';
-      chartContainer.style.position = 'absolute';
-      chartContainer.style.top = '0';
-      chartContainer.style.left = '0';
-      chartContainer.style.width = '100%';
-      chartContainer.style.height = '100%';
-      chartContainer.style.zIndex = '100';
-      chartContainer.style.background = 'rgba(25, 25, 35, 0.95)';
+      // 隐藏指标网格，显示图表容器
+      document.getElementById('vehicle-metrics-grid').style.display = 'none';
+      vehicleMetricChartContainer.style.display = 'block';
+      
+      // 更新图表标题
+      document.getElementById('vehicle-metric-chart-title').textContent = `${metricName} - 历史趋势`;
       
       const historyData = vehicleMetricsHistory[vehicleId]?.[metricId] || [];
       const labels = Array.from({length: historyData.length}, (_, i) => 
         `周期 ${currentPeriod - historyData.length + i + 1}`);
       
-      chartContainer.innerHTML = `
-        <div class="chart-header">
-          <h3 class="chart-title">${metricName} - 历史趋势</h3>
-          <div class="chart-actions">
-            <button class="chart-btn" id="close-vehicle-chart">关闭</button>
-          </div>
-        </div>
-        <canvas id="vehicle-metric-chart"></canvas>
-      `;
-      
-      vehicleDetailContainer.appendChild(chartContainer);
-      
-      // 绘制图表
       const ctx = document.getElementById('vehicle-metric-chart').getContext('2d');
       
-      // 计算图表范围（需求6）
+      // 销毁现有图表
+      if (vehicleMetricChart) {
+        vehicleMetricChart.destroy();
+      }
+      
+      // 计算图表范围
       const maxValue = Math.max(...historyData);
       const minValue = Math.min(...historyData);
       const paddingTop = maxValue * 0.2;
@@ -924,7 +941,7 @@
       
       const metricConfig = VEHICLE_METRICS.find(m => m.id === metricId);
       
-      const chart = new Chart(ctx, {
+      vehicleMetricChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels.length > 0 ? labels : ['周期 1'],
@@ -967,12 +984,6 @@
           }
         }
       });
-      
-      // 关闭按钮事件
-      document.getElementById('close-vehicle-chart').addEventListener('click', function() {
-        chartContainer.remove();
-        chart.destroy();
-      });
     }
 
     // 更新服务质量指标
@@ -1010,10 +1021,82 @@
         
         // 添加点击事件，显示该指标的折线图
         metricCard.addEventListener('click', function() {
-          showMetricChart(metric.id, metric.name, serviceQualityHistory, '服务质量指标');
+          showServiceQualityMetricChart(metric.id, metric.name);
         });
         
         metricsGrid.appendChild(metricCard);
+      });
+      
+      // 更新服务质量图表
+      updateServiceQualityChart();
+    }
+
+    // 显示服务质量指标折线图
+    function showServiceQualityMetricChart(metricId, metricName) {
+      // 隐藏指标网格和主图表，显示单个指标图表
+      serviceQualityMetricsContainer.style.display = 'none';
+      serviceQualityMetricChartContainer.style.display = 'block';
+      serviceQualityBackBtn.style.display = 'block';
+      
+      // 更新图表标题
+      document.getElementById('service-quality-metric-chart-title').textContent = `${metricName} - 历史趋势`;
+      
+      const historyData = serviceQualityHistory[metricId] || [];
+      const labels = Array.from({length: historyData.length}, (_, i) => 
+        `周期 ${currentPeriod - historyData.length + i + 1}`);
+      
+      const ctx = document.getElementById('service-quality-metric-chart').getContext('2d');
+      
+      // 销毁现有图表
+      if (serviceQualityMetricChart) {
+        serviceQualityMetricChart.destroy();
+      }
+      
+      // 计算图表范围
+      const maxValue = Math.max(...historyData);
+      const minValue = Math.min(...historyData);
+      const paddingTop = maxValue * 0.2;
+      const paddingBottom = minValue > 0 ? minValue * 0.2 : 0;
+      
+      const metricConfig = SERVICE_QUALITY_METRICS.find(m => m.id === metricId);
+      
+      serviceQualityMetricChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['周期 1'],
+          datasets: [{
+            label: metricName,
+            data: historyData.length > 0 ? historyData : [0],
+            borderColor: metricConfig?.borderColor || '#3498db',
+            backgroundColor: metricConfig?.color || 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '周期数'
+              },
+              min: Math.max(1, currentPeriod - 4),
+              max: currentPeriod
+            },
+            y: {
+              title: {
+                display: true,
+                text: metricConfig?.unit || ''
+              },
+              beginAtZero: minValue >= 0,
+              suggestedMin: Math.max(0, minValue - paddingBottom),
+              suggestedMax: maxValue + paddingTop
+            }
+          }
+        }
       });
     }
 
@@ -1080,7 +1163,7 @@
         
         // 添加点击事件，显示该指标的折线图
         metricCard.addEventListener('click', function() {
-          showMetricChart(metric.id, metric.name, systemMetricsHistory, '系统指标');
+          showSystemMetricChart(metric.id, metric.name);
         });
         
         metricsGrid.appendChild(metricCard);
@@ -1090,49 +1173,26 @@
       updateSystemChart();
     }
     
-    // 显示指标折线图
-    function showMetricChart(metricId, metricName, historyStorage, chartTitlePrefix) {
-      // 创建图表容器
-      const chartContainer = document.createElement('div');
-      chartContainer.id = 'metric-chart-overlay';
-      chartContainer.style.position = 'fixed';
-      chartContainer.style.top = '0';
-      chartContainer.style.left = '0';
-      chartContainer.style.width = '100%';
-      chartContainer.style.height = '100%';
-      chartContainer.style.zIndex = '2000';
-      chartContainer.style.background = 'rgba(0, 0, 0, 0.8)';
-      chartContainer.style.display = 'flex';
-      chartContainer.style.alignItems = 'center';
-      chartContainer.style.justifyContent = 'center';
+    // 显示系统指标折线图
+    function showSystemMetricChart(metricId, metricName) {
+      // 隐藏系统指标网格和主图表，显示单个指标图表
+      systemMetricsContainer.style.display = 'none';
+      metricChartContainer.style.display = 'block';
+      systemBackBtn.style.display = 'block';
       
-      const chartContent = document.createElement('div');
-      chartContent.style.width = '600px';
-      chartContent.style.height = '400px';
-      chartContent.style.background = 'rgba(25, 25, 35, 0.95)';
-      chartContent.style.borderRadius = '12px';
-      chartContent.style.padding = '20px';
-      chartContent.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      // 更新图表标题
+      document.getElementById('metric-chart-title').textContent = `${metricName} - 历史趋势`;
       
-      chartContent.innerHTML = `
-        <div class="chart-header">
-          <h3 class="chart-title">${chartTitlePrefix} - ${metricName}</h3>
-          <div class="chart-actions">
-            <button class="chart-btn" id="close-metric-chart">关闭</button>
-          </div>
-        </div>
-        <canvas id="metric-chart-canvas"></canvas>
-      `;
-      
-      chartContainer.appendChild(chartContent);
-      document.body.appendChild(chartContainer);
-      
-      // 绘制图表
-      const historyData = historyStorage[metricId] || [];
+      const historyData = systemMetricsHistory[metricId] || [];
       const labels = Array.from({length: historyData.length}, (_, i) => 
         `周期 ${currentPeriod - historyData.length + i + 1}`);
       
-      const ctx = document.getElementById('metric-chart-canvas').getContext('2d');
+      const ctx = document.getElementById('metric-chart').getContext('2d');
+      
+      // 销毁现有图表
+      if (metricChart) {
+        metricChart.destroy();
+      }
       
       // 计算图表范围
       const maxValue = Math.max(...historyData);
@@ -1140,10 +1200,15 @@
       const paddingTop = maxValue * 0.2;
       const paddingBottom = minValue > 0 ? minValue * 0.2 : 0;
       
-      const metricConfig = [...SYSTEM_METRICS, ...SERVICE_QUALITY_METRICS]
-        .find(m => m.id === metricId);
+      const metricConfig = [...SYSTEM_METRICS, 
+        { id: 'totalCost', name: '系统总代价', unit: '吨', borderColor: '#3498db' },
+        { id: 'totalTransportCount', name: '总运输次数', unit: '次', borderColor: '#2ecc71' },
+        { id: 'totalWeight', name: '总运量', unit: '吨', borderColor: '#f1c40f' },
+        { id: 'totalEmptyMileage', name: '总空载里程', unit: '千米', borderColor: '#e74c3c' },
+        { id: 'avgUtilization', name: '平均利用率', unit: '', borderColor: '#e67e22' }
+      ].find(m => m.id === metricId);
       
-      const chart = new Chart(ctx, {
+      metricChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels.length > 0 ? labels : ['周期 1'],
@@ -1181,12 +1246,6 @@
           }
         }
       });
-      
-      // 关闭按钮事件
-      document.getElementById('close-metric-chart').addEventListener('click', function() {
-        chartContainer.remove();
-        chart.destroy();
-      });
     }
 
     // 更新散点图
@@ -1200,7 +1259,7 @@
         label: vehicle.UUID.substring(0, 6)
       }));
       
-      // 计算坐标轴范围（需求5）
+      // 计算坐标轴范围
       const xValues = scatterData.map(d => d.x);
       const yValues = scatterData.map(d => d.y);
       const maxX = Math.max(...xValues);
