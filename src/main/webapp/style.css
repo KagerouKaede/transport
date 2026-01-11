@@ -781,7 +781,7 @@ html, body {
 /* 优化11：调整底部按钮位置 */
 .bottom-buttons {
     position: absolute;
-    left: 380px;
+    right: 16px;
     bottom: 16px;
     transform: none;
     z-index: 1000;
@@ -959,7 +959,7 @@ html, body {
     }
     
     .bottom-buttons {
-        left: 360px;
+        right: 16px;
     }
 }
 
@@ -972,7 +972,7 @@ html, body {
     }
     
     .bottom-buttons {
-        left: 340px;
+        right: 16px;
     }
 }
 

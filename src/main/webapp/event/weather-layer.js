@@ -8,6 +8,7 @@ export class WeatherEffectLayer
         this.animationId = null;
         this.effects = new Map();
         this.visible = true;
+        this.isZooming = false;
         
         this.init();
     }
@@ -31,7 +32,9 @@ export class WeatherEffectLayer
         
         // 监听地图变化
         this.map.on('resize', () => this.resize());
-        this.map.on('zoomchange', () => this.render());
+        // 在缩放交互期间暂停粒子渲染，缩放结束后再渲染一次以避免频繁重绘
+        this.map.on('zoomstart', () => { this.isZooming = true; });
+        this.map.on('zoomend', () => { this.isZooming = false; this.render(); });
         this.map.on('moveend', () => this.render());
     }
     
@@ -581,7 +584,10 @@ export class WeatherEffectLayer
     
     startAnimation() {
         const animate = () => {
-            this.render();
+            // 如果正在缩放则跳过本次渲染，缩放结束时会触发一次完整渲染
+            if (!this.isZooming) {
+                this.render();
+            }
             this.animationId = requestAnimationFrame(animate);
         };
         animate();

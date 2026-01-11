@@ -113,46 +113,54 @@ public class DataController extends Controller
         //Double cycleCost = 0.0;
         
         Car car = CarManager.carMap.get(uuid);
+        if (car == null) {
+            renderJson((Object) null);
+            return;
+        }
+
         CarStatistics statistics = car.getStatistics();
-        statistics.calculateLoad_utilization_rate(car);
-        statistics.calculateCapacity_utilization_rate(car);
-        Map<String, String> data = new HashMap<>();
+        if (statistics != null) {
+            statistics.calculateLoad_utilization_rate(car);
+            statistics.calculateCapacity_utilization_rate(car);
+            statistics.calculateAverageOrderCycle();
+        }
+
+        // 返回给前端的字段使用前端期望的命名（数值保持原生类型）
+        Map<String, Object> data = new HashMap<>();
         data.put("UUID", car.getUUID());
-        data.put("position_lat", String.valueOf(car.getPosition().lat));
-        data.put("position_lon",  String.valueOf(car.getPosition().lon));
-        data.put("state", car.getState().toString());
-        data.put("load", String.valueOf(car.getLoad()));
+        // data.put("position_lat", car.getPosition() != null ? car.getPosition().lat : null);
+        // data.put("position_lon", car.getPosition() != null ? car.getPosition().lon : null);
+        data.put("state", car.getState() != null ? car.getState().toString() :"AVAILABLE");
+        data.put("load", car.getLoad());
 
-        // 获取 CarStatistics 类的所有 Getter
-        Method[] methods = CarStatistics.class.getMethods();
-        for (Method method : methods)
-        {
-            if (method.getName().startsWith("get"))
-            {
-                // 去掉 get 前缀，首字母小写
-                String methodName = method.getName();
-                String varName = Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
+        if (statistics != null) {
+            data.put("waitingTime", statistics.getWaitingTime());
+            data.put("emptyDistance", statistics.getEmptyDistance());
+            data.put("wastedLoad", statistics.getWastedLoad());
+            data.put("totalWeight", statistics.getTotalWeight());
+            data.put("carbonEmission", statistics.getCarbonEmission());
+            data.put("totalDistance", statistics.getTotalDistance());
+            data.put("completedOrders", statistics.getCompletedOrders());
+            // completeOrderCycle 没有公开 getter，返回 averageOrderCycle 供前端展示
+            data.put("completeOrderCycle", statistics.getAverageOrderCycle());
+            data.put("averageOrderCycle", statistics.getAverageOrderCycle());
 
-                // 调用 Getter 方法获取值并转换为字符串
-                try {
-                    Object value = method.invoke(statistics);
-                    data.put(varName, String.valueOf(value));
-                } catch (Exception e) {
-                    logger.warn("Failed to invoke getter {} on CarStatistics: {}", method.getName(), e.getMessage());
-                    data.put(varName, "null");
-                }
-            }
+            // 按前端约定的下划线命名返回计算指标
+            data.put("mileage_utilization_rate", statistics.getMileageUtilizationRate());
+            data.put("carbon_emission_per_unit", statistics.getCarbonEmissionPerUnit());
+            data.put("load_utilization_rate", statistics.getLoad_utilization_rate());
+            data.put("capacity_utilization_rate", statistics.getCapacity_utilization_rate());
         }
-        // 保存统计数据到数据库
-        DBManager.saveStatisticsToCarDB(car);
-        //Map<Double,List<Map<String,String>>> finaldata = new HashMap<>();
-        //finaldata.put(cycleCost, carData);
+
+        // 保存统计数据到数据库（保持现有行为）
         try {
-            reply(true, JSON_MAPPER.writeValueAsString(data));
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize dashboard data to JSON", e);
-            reply(false, "Failed to serialize dashboard data to JSON");
+            DBManager.saveStatisticsToCarDB(car);
+        } catch (Exception e) {
+            logger.warn("saveStatisticsToCarDB failed for {}: {}", uuid, e.getMessage());
         }
+
+        // 直接返回对象 JSON（不再把 JSON 再包成字符串），减少前端解析复杂度
+        renderJson(data);
     }
 
     /**
@@ -160,92 +168,80 @@ public class DataController extends Controller
      */
     public void getAllCarsStatistics()
     {
-        Map<String, String> data = new HashMap<>();
-        int Available_count=0, Malfunction_count=0;
+        int availableCount = 0, malfunctionCount = 0;
         List<Double> loadRates = new ArrayList<>();
         List<Double> capacityRates = new ArrayList<>();
-        
-        for(Car car : CarManager.carMap.values())
-        {
-            car.getStatistics().calculateLoad_utilization_rate(car);
-            car.getStatistics().calculateCapacity_utilization_rate(car);
-            loadRates.add(car.getStatistics().getLoad_utilization_rate());
-            capacityRates.add(car.getStatistics().getCapacity_utilization_rate());
-            if(car.getState()==CarState.AVAILABLE) Available_count++;
-            else if(car.getState()==CarState.FREEZE) Malfunction_count++;
+
+        for (Car car : CarManager.carMap.values()) {
+            CarStatistics stats = car.getStatistics();
+            if (stats != null) {
+                stats.calculateLoad_utilization_rate(car);
+                stats.calculateCapacity_utilization_rate(car);
+                loadRates.add(stats.getLoad_utilization_rate());
+                capacityRates.add(stats.getCapacity_utilization_rate());
+            }
+            if (car.getState() == CarState.AVAILABLE) availableCount++;
+            else if (car.getState() == CarState.FREEZE) malfunctionCount++;
         }
-        
-        // 计算装载率的平均值和方差
+
         double loadMean = loadRates.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         double loadVariance = loadRates.stream().mapToDouble(x -> Math.pow(x - loadMean, 2)).average().orElse(0.0);
-        
-        // 计算运力利用率的平均值和方差
         double capacityMean = capacityRates.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         double capacityVariance = capacityRates.stream().mapToDouble(x -> Math.pow(x - capacityMean, 2)).average().orElse(0.0);
-        
-        data.put("Available_count", String.valueOf(Available_count));
-        data.put("Malfunction_count", String.valueOf(Malfunction_count));
-        data.put("Load_utilization_rate_mean", String.valueOf(loadMean));
-        data.put("Load_utilization_rate_variance", String.valueOf(loadVariance));
-        data.put("Capacity_utilization_rate_mean", String.valueOf(capacityMean));
-        data.put("Capacity_utilization_rate_variance", String.valueOf(capacityVariance));
-        
-        // 保存统计数据到数据库
-        String jsonContent;
-        try {
-            jsonContent = JSON_MAPPER.writeValueAsString(data);
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize all cars statistics to JSON", e);
-            reply(false, "Failed to serialize all cars statistics to JSON");
-            return;
-        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("availableCount", availableCount);
+        data.put("malfunctionCount", malfunctionCount);
+        data.put("loadUtilizationRateMean", loadMean);
+        data.put("loadUtilizationRateVariance", loadVariance);
+        data.put("capacityUtilizationRateMean", capacityMean);
+        data.put("capacityUtilizationRateVariance", capacityVariance);
+
+        // 保存统计数据到数据库（保留原有 sandbox 写入）
         DBManager.saveToSandbox(loadMean,
                                loadVariance,
                                capacityMean,
                                capacityVariance,
                                null, null, null, null, null);
-        reply(true, jsonContent);
+
+        renderJson(data);
     }
 
     /**获取服务质量指标 */
     public void getServiceQualityMetrics()
     {
-        Map<String, String> data = new HashMap<>();
-        if(StateChangeTimes == 0) StateChangeTimes = 1; // 防止除以零
-        double Ontime_delivery_rate = FreezeTimes / ((double)StateChangeTimes/5);
-        data.put("Ontime_delivery_rate", String.valueOf(Ontime_delivery_rate));
-        data.put("Total_delay_time", String.valueOf(totalDelayTime));
+        if (StateChangeTimes == 0) StateChangeTimes = 1; // 防止除以零
+        double ontimeDeliveryRate = FreezeTimes / ((double) StateChangeTimes / 5);
 
-        if(FreezeTimes == 0) FreezeTimes = 1; // 防止除以零
-        double averageDelayTime = totalDelayTime / (double)FreezeTimes;
-        data.put("Average_delay_time", String.valueOf(averageDelayTime));
-        double order_cycle = 0.0;
-        for(Car car : CarManager.carMap.values())
-        {
-            order_cycle += car.getStatistics().getAverageOrderCycle();
+        double totalDelay = totalDelayTime;
+        if (FreezeTimes == 0) FreezeTimes = 1; // 防止除以零
+        double averageDelayTime = totalDelay / (double) FreezeTimes;
+
+        double orderCycleSum = 0.0;
+        int count = 0;
+        for (Car car : CarManager.carMap.values()) {
+            if (car.getStatistics() != null) {
+                orderCycleSum += car.getStatistics().getAverageOrderCycle();
+                count++;
+            }
         }
-        double Average_order_cycle = 0.0;
-        if (CarManager.carMap.size() >0 ) {
-            Average_order_cycle = order_cycle / CarManager.carMap.size();
-        }
-        data.put("Average_order_cycle", String.valueOf(Average_order_cycle));
+        double averageOrderCycle = count > 0 ? orderCycleSum / count : 0.0;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("ontimeDeliveryRate", ontimeDeliveryRate);
+        data.put("totalDelayTime", totalDelay);
+        data.put("averageDelayTime", averageDelayTime);
+        data.put("averageOrderCycle", averageOrderCycle);
 
         // 保存统计数据到数据库
-        String jsonContent;
-        try {
-            jsonContent = JSON_MAPPER.writeValueAsString(data);
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize service quality metrics to JSON", e);
-            reply(false, "Failed to serialize service quality metrics to JSON");
-            return;
-        }
         DBManager.saveToSandbox(null, null, null, null,
-                               Ontime_delivery_rate,
-                               totalDelayTime,
+                               ontimeDeliveryRate,
+                               totalDelay,
                                averageDelayTime,
-                               Average_order_cycle,
+                               averageOrderCycle,
                                null);
-        reply(true, jsonContent);
+
+        renderJson(data);
     }
 
     /**获取系统指标 */
@@ -284,11 +280,28 @@ public class DataController extends Controller
         Car car = CarManager.carMap.get(uuid);
         Map<String, Double> dest = null;
 
-        car.getStatistics().incrementCompleteOrderCycle();
+        if (car == null) {
+            logger.warn("getDestination: car not found for UUID: {}", uuid);
+            renderJson((Object) null);
+            return;
+        }
+
+        if (car.getStatistics() != null) {
+            try { car.getStatistics().incrementCompleteOrderCycle(); } catch (Exception e) { logger.warn("incrementCompleteOrderCycle failed: {}", e.getMessage()); }
+        }
+
         // 车辆计时器滴答一次并在计时器归零时进行车辆状态转换
-        car.tick(car.getState());
-        if(car.getStateTimer().timeUp()) {car.changeState();StateChangeTimes++;}
-        if(car.getState() == CarState.FREEZE) {FreezeTimes++;
+        try { car.tick(car.getState()); } catch (Exception e) { logger.warn("car.tick failed for UUID {}: {}", uuid, e.getMessage()); }
+        try {
+            if (car.getStateTimer() != null && car.getStateTimer().timeUp()) {
+                car.changeState();
+                StateChangeTimes++;
+            }
+        } catch (Exception e) {
+            logger.warn("state timer check failed for UUID {}: {}", uuid, e.getMessage());
+        }
+        if(car.getState() == CarState.FREEZE) {
+            FreezeTimes++;
             Random rand = new Random();
             int randomNum = rand.nextInt(70) + 3; // 生成3到72之间的随机数
             totalDelayTime += randomNum;
@@ -297,23 +310,33 @@ public class DataController extends Controller
         // 仅在车辆进入了接单行驶/运货行驶状态时给dest赋值，其他状态返回的dest为null
         switch (car.getState())
         {
-            case ORDER_TAKEN:
-            {
-                PathNode pathnode = car.fetchFirstNode();
-                dest = Map.of(
-                    "lat", pathnode.getDemand().getOrigin().lat,
-                    "lon", pathnode.getDemand().getOrigin().lon
-                );
+            case ORDER_TAKEN: {
+                try {
+                    PathNode pathnode = car.fetchFirstNode();
+                    if (pathnode != null && pathnode.getDemand() != null && pathnode.getDemand().getOrigin() != null) {
+                        dest = Map.of(
+                            "lat", pathnode.getDemand().getOrigin().lat,
+                            "lon", pathnode.getDemand().getOrigin().lon
+                        );
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to get ORDER_TAKEN destination for UUID {}: {}", uuid, e.getMessage());
+                }
                 break;
             }
 
-            case TRANSPORTING:
-            {
-                PathNode pathnode = car.fetchFirstNode();
-                dest = Map.of(
-                    "lat", pathnode.getDemand().getDestination().lat,
-                    "lon", pathnode.getDemand().getDestination().lon
-                );
+            case TRANSPORTING: {
+                try {
+                    PathNode pathnode = car.fetchFirstNode();
+                    if (pathnode != null && pathnode.getDemand() != null && pathnode.getDemand().getDestination() != null) {
+                        dest = Map.of(
+                            "lat", pathnode.getDemand().getDestination().lat,
+                            "lon", pathnode.getDemand().getDestination().lon
+                        );
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to get TRANSPORTING destination for UUID {}: {}", uuid, e.getMessage());
+                }
                 break;
             }
 

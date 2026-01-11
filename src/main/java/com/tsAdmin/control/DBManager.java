@@ -347,7 +347,7 @@ public class DBManager
                 }
                 else
                 {
-                    String updateSql = "UPDATE car SET location_lat = ?, location_lon = ?, load = ?, volume = ?, currState = ?, prevState = ?, waitingTime = ?, emptyDistance = ?, wastedLoad = ?, totalWeight = ?, carbonEmission = ?, totalDistance = ?, completedOrders = ?, averageOrderCycle = ? WHERE UUID = ? AND sandbox_UUID = ?";
+                    String updateSql = "UPDATE car SET `location_lat` = ?, `location_lon` = ?, `load` = ?, `volume` = ?, `currState` = ?, `prevState` = ?, `waitingTime` = ?, `emptyDistance` = ?, `wastedLoad` = ?, `totalWeight` = ?, `carbonEmission` = ?, `totalDistance` = ?, `completedOrders` = ?, `averageOrderCycle` = ? WHERE `UUID` = ? AND `sandbox_UUID` = ?";
 
                     Object lat = car.getPosition() != null ? car.getPosition().lat : null;
                     Object lon = car.getPosition() != null ? car.getPosition().lon : null;
@@ -521,24 +521,58 @@ public class DBManager
     {
         try
         {
-            String sql = "UPDATE car SET location_lat = ?, location_lon = ?,load = ?,currState = ?, prevState = ?, waitingTime = ?, emptyDistance = ?, wastedLoad = ?, totalWeight = ?, carbonEmission = ?, totalDistance = ?, completedOrders = ?, averageOrderCycle = ? WHERE UUID = ? AND sandbox_UUID = ?";
+            String sql = "UPDATE car SET `location_lat` = ?, `location_lon` = ?, `load` = ?, `currState` = ?, `prevState` = ?, `waitingTime` = ?, `emptyDistance` = ?, `wastedLoad` = ?, `totalWeight` = ?, `carbonEmission` = ?, `totalDistance` = ?, `completedOrders` = ?, `averageOrderCycle` = ? WHERE `UUID` = ? AND `sandbox_UUID` = ?";
+
+            // Null-safe parameter extraction to avoid NPE when some objects are not initialized
+            Double lat = null, lon = null;
+            if (car.getPosition() != null) {
+                lat = car.getPosition().lat;
+                lon = car.getPosition().lon;
+            }
+
+            Integer load = car.getLoad();
+            Integer volume = car.getVolume();
+
+            String currState = car.getState() != null ? car.getState().toString() : null;
+            String prevState = car.getPrevState() != null ? car.getPrevState().toString() : null;
+
+            Double waitingTime = null, emptyDistance = null, wastedLoad = null, totalWeight = null, carbonEmission = null, totalDistance = null;
+            Integer completedOrders = null;
+            Double averageOrderCycle = null;
+
+            if (car.getStatistics() != null) {
+                try {
+                    waitingTime = car.getStatistics().getWaitingTime();
+                    emptyDistance = car.getStatistics().getEmptyDistance();
+                    wastedLoad = car.getStatistics().getWastedLoad();
+                    totalWeight = car.getStatistics().getTotalWeight();
+                    carbonEmission = car.getStatistics().getCarbonEmission();
+                    totalDistance = car.getStatistics().getTotalDistance();
+                    completedOrders = car.getStatistics().getCompletedOrders();
+                    averageOrderCycle = car.getStatistics().getAverageOrderCycle();
+                } catch (Exception ex) {
+                    logger.warn("Failed to read CarStatistics for UUID: {}: {}", car.getUUID(), ex.getMessage());
+                }
+            }
+
             int rowsAffected = Db.update(sql,
-                car.getPosition().lat,
-                car.getPosition().lon,
-                car.getLoad(),
-                car.getState().toString(),
-                car.getPrevState().toString(),
-                car.getStatistics().getWaitingTime(),
-                car.getStatistics().getEmptyDistance(),
-                car.getStatistics().getWastedLoad(),
-                car.getStatistics().getTotalWeight(),
-                car.getStatistics().getCarbonEmission(),
-                car.getStatistics().getTotalDistance(),
-                car.getStatistics().getCompletedOrders(),
-                car.getStatistics().getAverageOrderCycle(),
+                lat,
+                lon,
+                load,
+                currState,
+                prevState,
+                waitingTime,
+                emptyDistance,
+                wastedLoad,
+                totalWeight,
+                carbonEmission,
+                totalDistance,
+                completedOrders,
+                averageOrderCycle,
                 car.getUUID(),
                 ConfigLoader.getConfigUUID()
             );
+
             logger.debug("Updated car statistics for UUID: {}, rows affected: {}", car.getUUID(), rowsAffected);
             return rowsAffected > 0;
         }

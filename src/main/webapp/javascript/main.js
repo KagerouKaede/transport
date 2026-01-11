@@ -23,7 +23,8 @@ script.onload = () => main();
 script.onerror = () => console.error('高德地图 API 加载失败');
 document.head.appendChild(script);
 
-const updateInterval = 5000;    // 更新间隔5000ms
+// 减少主更新频率以降低主线程负载
+const updateInterval = 7000;    // 更新间隔7000ms
 const duration = 20; // 每段停留时间（单位：毫秒）
 // const routes = [];
 const POIs = [];//poi点数组
@@ -36,6 +37,38 @@ let map;//map对象
 let driving;//driving对象
 let carIcon;
 
+// 在交互期间隐藏/显示所有车辆标注以减轻缩放/拖拽时的渲染压力
+function hideAllVehicleMarkers() {
+    try {
+        cars.forEach(v => {
+            if (v && v.marker) {
+                if (typeof v.marker.hide === 'function') v.marker.hide();
+                else if (typeof v.marker.setVisible === 'function') v.marker.setVisible(false);
+            }
+        });
+    } catch (e) { /* ignore */ }
+}
+
+function showAllVehicleMarkers() {
+    try {
+        cars.forEach(v => {
+            if (v && v.marker) {
+                if (typeof v.marker.show === 'function') v.marker.show();
+                else if (typeof v.marker.setVisible === 'function') v.marker.setVisible(true);
+            }
+        });
+    } catch (e) { /* ignore */ }
+    // 交互结束后强制刷新位置
+    try { if (window.animationManager && typeof window.animationManager.forceUpdateMarkers === 'function') window.animationManager.forceUpdateMarkers(); } catch(e){}
+    // 如果之前推迟了散点图刷新，则现在刷新一次
+    try {
+        if (window.pendingScatterUpdate) {
+            window.pendingScatterUpdate = false;
+            if (typeof updateScatterChart === 'function') updateScatterChart();
+        }
+    } catch (e) { /* ignore */ }
+}
+
 class AnimationManager {
     constructor(eventManager, baseDuration = 20) {
         this.eventManager = eventManager;
@@ -45,15 +78,19 @@ class AnimationManager {
         this.animationSpeed = 1.0; // 全局动画速度因子
         
         // 每秒更新所有动画
-        this.startAnimationLoop();
+            this.running = true;
+            this.startAnimationLoop();
     }
 
-    // 启动动画循环
-    startAnimationLoop() {
-        this.updateInterval = setInterval(() => {
-            this.updateAllAnimations();
-        }, 16); // 约60fps
-    }
+        // 启动动画循环（使用 requestAnimationFrame 更省资源）
+        startAnimationLoop() {
+            const loop = () => {
+                if (!this.running) return;
+                this.updateAllAnimations();
+                requestAnimationFrame(loop);
+            };
+            requestAnimationFrame(loop);
+        }
 
     // 启动车辆动画
     startVehicleAnimation(vehicle, route) {
@@ -110,18 +147,24 @@ class AnimationManager {
             this.eventManager.checkVehicleEvents(animation.vehicle);
             
             // 更新位置
-            const newIndex = Math.min(animation.currentIndex + framesToMove, animation.path.length - 1);
-            
-            if (newIndex > animation.currentIndex) {
-                const point = animation.path[newIndex];
-                animation.vehicle.marker.setPosition([point.lng, point.lat]);
-                animation.currentIndex = newIndex;
-                
-                // 如果到达终点
-                if (newIndex >= animation.path.length - 1) {
-                    this.onAnimationComplete(animation.vehicle);
-                }
-            }
+                    const newIndex = Math.min(animation.currentIndex + framesToMove, animation.path.length - 1);
+
+                    if (newIndex > animation.currentIndex) {
+                        animation.currentIndex = newIndex;
+                        const point = animation.path[newIndex];
+                        // 在地图交互（缩放/拖拽）期间避免频繁调用 setPosition，以减少主线程抖动
+                        if (typeof window !== 'undefined' && window.mapInteracting) {
+                            // 延迟应用位置，交互结束时一次性刷新
+                            animation.pendingPosition = [point.lng, point.lat];
+                        } else {
+                            animation.vehicle.marker.setPosition([point.lng, point.lat]);
+                        }
+
+                        // 如果到达终点
+                        if (newIndex >= animation.path.length - 1) {
+                            this.onAnimationComplete(animation.vehicle);
+                        }
+                    }
             
             animation.lastUpdateTime = now;
         }
@@ -178,10 +221,27 @@ class AnimationManager {
     
     // 销毁
     destroy() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
-        this.animations.clear();
+        this.running = false;
+        try { this.animations.clear(); } catch (e) { /* ignore */ }
+    }
+
+    // 在交互结束后一次性刷新所有动画标注到最新位置
+    forceUpdateMarkers() {
+        this.animations.forEach((animation, vehicleId) => {
+            try {
+                const idx = animation.currentIndex || 0;
+                const point = animation.path && animation.path[idx];
+                if (point) {
+                    animation.vehicle.marker.setPosition([point.lng, point.lat]);
+                }
+                if (animation.pendingPosition) {
+                    animation.vehicle.marker.setPosition(animation.pendingPosition);
+                    delete animation.pendingPosition;
+                }
+            } catch (e) {
+                // ignore individual marker errors
+            }
+        });
     }
 }
 
@@ -199,6 +259,13 @@ async function main()
         map.addControl(new AMap.Scale());
         map.addControl(new AMap.ControlBar());
 
+        // 地图交互标志：在缩放或拖拽期间设置为 true，以便暂停高频 DOM 更新
+        try { window.mapInteracting = false; } catch (e) { /* ignore */ }
+        map.on('movestart', () => { try { window.mapInteracting = true; hideAllVehicleMarkers(); } catch(e){} });
+        map.on('moveend', () => { try { window.mapInteracting = false; showAllVehicleMarkers(); } catch(e){} });
+        map.on('zoomstart', () => { try { window.mapInteracting = true; hideAllVehicleMarkers(); } catch(e){} });
+        map.on('zoomend', () => { try { window.mapInteracting = false; showAllVehicleMarkers(); } catch(e){} });
+
         console.log('地图初始化完成');
 
         await initPOI();
@@ -209,12 +276,17 @@ async function main()
         
         // 初始化动画管理器，后于事件管理器
         animationManager = new AnimationManager(eventManager, duration);
+            // 暴露到 window 以便外部（例如 map.html 的停止逻辑）能访问并销毁
+            try { window.animationManager = animationManager; } catch(e) { /* ignore */ }
+            try { window.eventManager = eventManager; } catch(e) { /* ignore */ }
+        // 标志位：仿真是否已停止（供循环快速返回）
+        try { window.simulationStopped = false; } catch(e) { /* ignore */ }
 
         // 添加时间和天气显示
         addTimeWeatherDisplay();
 
-        // 每秒更新时间显示
-        setInterval(() => {
+        // 每秒更新时间显示（保存到 window 以便停止时清理）
+        window.timeUpdateInterval = setInterval(() => {
             if (eventManager) {
                 updateTimeWeatherDisplay();
             }
@@ -225,12 +297,11 @@ async function main()
         console.error('初始化失败: ', error);
     }
 
-    try
-    {
-        setInterval(() => update(), updateInterval);//总更新函数
-    }
-    catch (error)
-    {
+    try {
+        // 防止 update 重叠运行，update 内部会自行处理并发控制
+        // 保存到 window 以便在停止仿真时能清除
+        window.mainUpdateInterval = setInterval(() => update(), updateInterval); // 总更新函数
+    } catch (error) {
         console.error('运行时出错: ', error);
     }
 }
@@ -252,6 +323,7 @@ async function initEventManager() {
         // 初始化事件管理器
         eventManager = new EventManager(map, cars, eventFunctions);
         await eventManager.initialize(config);
+        try { window.eventManager = eventManager; } catch(e) { /* ignore */ }
         
         console.log('事件管理器初始化成功');
     } catch (error) {
@@ -534,6 +606,64 @@ function addTimeWeatherDisplay() {
     `;
     
     map.getContainer().appendChild(infoDiv);
+
+    // 添加结束仿真按钮到时间信息栏右侧
+    const stopBtn = document.createElement('button');
+    stopBtn.id = 'close-transport';
+    stopBtn.className = 'bottom-btn close-transport-btn';
+    stopBtn.style.cssText = 'margin-left:12px;';
+    stopBtn.innerHTML = `<span class="btn-icon">⏹️</span><span>结束仿真</span>`;
+    infoDiv.appendChild(stopBtn);
+
+    // 简单的前端通知函数（局部）
+    function showToast(message, type = 'info') {
+        const t = document.createElement('div');
+        t.textContent = message;
+        t.style.cssText = `position:fixed; top:80px; right:24px; background:${type==='error'?"rgba(231,76,60,0.95)":"rgba(46,204,113,0.95)"}; color:white; padding:10px 14px; border-radius:8px; z-index:20000;`;
+        document.body.appendChild(t);
+        setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 3000);
+    }
+
+    // 绑定停止仿真逻辑
+    stopBtn.addEventListener('click', async function() {
+        if (!confirm('确定要结束仿真吗？这将会停止所有车辆的运行。')) return;
+        stopBtn.disabled = true;
+        const originalText = stopBtn.innerHTML;
+        stopBtn.innerHTML = '<span class="btn-icon">⏳</span><span>停止中...</span>';
+
+        try {
+            const resp = await fetch('/sandbox/stopSimulation', { method: 'POST', headers: { 'Content-Type':'application/x-www-form-urlencoded' } });
+            const result = await resp.json().catch(()=>({ success:false, message:'invalid response' }));
+
+            if (result && result.success) {
+                // 停止各类周期更新（map.html 及 main.js 中可能存在多个 interval）
+                try { if (window.updateInterval) { clearInterval(window.updateInterval); window.updateInterval = null; } } catch(e) {console.warn(e);}                
+                try { if (window.mainUpdateInterval) { clearInterval(window.mainUpdateInterval); window.mainUpdateInterval = null; } } catch(e) {console.warn(e);}                
+                try { if (window.timeUpdateInterval) { clearInterval(window.timeUpdateInterval); window.timeUpdateInterval = null; } } catch(e) {console.warn(e);}                
+
+                // 停止并销毁动画管理器与事件管理器（若存在）
+                try { if (window.animationManager && typeof window.animationManager.destroy === 'function') window.animationManager.destroy(); } catch(e) {console.warn(e);}                
+                try { if (window.eventManager && typeof window.eventManager.destroy === 'function') window.eventManager.destroy(); } catch(e) {console.warn(e);}                
+
+                // 调用页面级清理函数（在 map.html 中定义）
+                try { if (typeof updateAllVehiclesToStopped === 'function') updateAllVehiclesToStopped(); } catch(e){console.warn(e);}                
+                try { if (typeof clearAllMapMarkers === 'function') clearAllMapMarkers(); } catch(e){console.warn(e);}                
+
+                try { window.simulationStopped = true; } catch(e) { /* ignore */ }
+                stopBtn.innerHTML = '<span class="btn-icon">✅</span><span>已停止</span>';
+                showToast('仿真已成功停止', 'success');
+            } else {
+                stopBtn.disabled = false;
+                stopBtn.innerHTML = originalText;
+                showToast('停止仿真失败: ' + (result && result.message ? result.message : 'unknown'), 'error');
+            }
+        } catch (err) {
+            console.error('停止仿真请求失败:', err);
+            stopBtn.disabled = false;
+            stopBtn.innerHTML = originalText;
+            showToast('停止仿真请求失败，请检查网络连接', 'error');
+        }
+    });
 }
 
 async function initPOI() {
@@ -736,85 +866,86 @@ function updateTimeWeatherDisplay() {
  * 车辆位置及状态更新
  */
 async function updateCars() {
-    console.log("调用 updateCars");
-    
-    try {
-        for (const car of cars) {
-            if (car.status === 2) { // 紧急停止状态
-                continue;
-            }
-            
-            if (car.status === 0) {
+    if (isCarUpdating) return; // 防止重入
+    if (window.simulationStopped) return; // 快速退出以减轻停仿真时的负载
+    isCarUpdating = true;
+
+    const toProcess = cars.filter(c => c.status === 0);
+    const concurrency = 3; // 并发处理车辆数（根据机器性能调整）
+    let idx = 0;
+
+    async function worker() {
+        while (true) {
+            const i = idx++;
+            if (i >= toProcess.length) break;
+            if (window.simulationStopped) break;
+            const car = toProcess[i];
+            try {
                 const recivdata = await sendPara(car.UUID, 0, 0);
-                if (!recivdata) {
-                    //当前车辆无订单
-                    continue;
-                }
-                
-                const end = [recivdata.lng, recivdata.lat];
+                if (!recivdata) continue;
+
+                const end = [recivdata.lon, recivdata.lat];
                 const currentLngLat = car.marker.getPosition();
                 const start = [currentLngLat.lng, currentLngLat.lat];
-                console.log("起点", start);
-                
-                try {
-                    // 获取避让区域
-                    let avoidPolygons = [];
-                    if (eventManager && eventManager.closurePaths.length > 0) {
-                        avoidPolygons = eventManager.closurePaths.map(cp => cp.event.path);
-                    }
-                    
-                    // 路径规划
-                    let route;
-                    if (avoidPolygons.length > 0 && eventManager) {
-                        route = await eventManager.planRouteWithAvoidance(start, end, avoidPolygons);
-                    } else {
-                        route = await planRoute(start, end);
-                    }
-                    
-                    if (!route || !route.steps || route.steps.length === 0 || typeof route.distance !== 'number') {
-                        console.error(`车辆 ${car.UUID} 路径无效，跳过`);
-                        continue;
-                    }
-                    
-                    car.status = 1;
-                    const routeInfo = await drawRoute(route);
-                    
-                    // 记录路径信息
-                    routeInfo.originalDistance = route.distance;
-                    routeInfo.originalTime = route.time;
-                    routeInfo.additionalDistance = 0;
-                    routeInfo.additionalTime = 0;
-                    car.info = routeInfo;
-                    
-                    // 清除车辆现有事件关联（开始新行程）
-                    car.accidentEvent = null;
-                    car.trafficJamEvent = null;
-                    car.roadClosureEvent = null;
-                    car.isEvent = 0;
-                    
-                    // 使用动画管理器启动动画
-                    if (animationManager) {
-                        animationManager.startVehicleAnimation(car, route);
-                    }
-                    
-                } catch (err) {
-                    console.error(`车辆 ${car.UUID} 路径规划失败:`, err);
+
+                // 获取避让区域
+                let avoidPolygons = [];
+                if (eventManager && eventManager.closurePaths && eventManager.closurePaths.length > 0) {
+                    avoidPolygons = eventManager.closurePaths.map(cp => cp.event.path);
                 }
-            } else if (car.status === 1) {
-                // 检查是否有事件需要触发（通过事件管理器）
-                if (eventManager) {
-                    eventManager.checkVehicleEvents(car);
+
+                // 路径规划（并发少量即可）
+                let route;
+                if (avoidPolygons.length > 0 && eventManager) {
+                    route = await eventManager.planRouteWithAvoidance(start, end, avoidPolygons);
+                } else {
+                    route = await planRoute(start, end);
                 }
-                
-                // 如果车辆有道路封闭事件且已触发，等待重新规划
-                if (car.isEvent === 3 && car.roadClosureEvent && car.roadClosureEvent.triggered) {
-                    console.log(`车辆 ${car.UUID} 等待道路封闭重新规划...`);
+
+                if (!route || !route.steps || route.steps.length === 0 || typeof route.distance !== 'number') {
+                    continue;
                 }
+
+                car.status = 1;
+                const routeInfo = await drawRoute(route);
+
+                routeInfo.originalDistance = route.distance;
+                routeInfo.originalTime = route.time;
+                routeInfo.additionalDistance = 0;
+                routeInfo.additionalTime = 0;
+                car.info = routeInfo;
+
+                car.accidentEvent = null;
+                car.trafficJamEvent = null;
+                car.roadClosureEvent = null;
+                car.isEvent = 0;
+
+                if (animationManager) {
+                    animationManager.startVehicleAnimation(car, route);
+                }
+            } catch (err) {
+                console.warn(`处理车辆 ${car.UUID} 时出错:`, err);
             }
         }
-    } catch (error) {
-        console.error("车辆更新总过程出错：", error);
     }
+
+    const workers = Array(Math.min(concurrency, toProcess.length)).fill(0).map(() => worker());
+    try {
+        await Promise.all(workers);
+    } catch (e) {
+        console.warn('部分车辆处理时出现错误', e);
+    }
+
+    // 对于处于行驶状态的车辆，触发事件检查（单线程）
+    try {
+        for (const car of cars) {
+            if (car.status === 1 && eventManager) {
+                eventManager.checkVehicleEvents(car);
+            }
+        }
+    } catch (e) { console.warn('事件检查错误', e); }
+
+    isCarUpdating = false;
 }
 
 

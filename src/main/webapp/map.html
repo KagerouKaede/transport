@@ -5,7 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>智能运输系统地图</title>
   <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    // 尝试优先加载本地 Chart.js（项目内），若不存在则回退到 CDN
+    (function(){
+      function load(src, onload, onerror){
+        var s = document.createElement('script');
+        s.src = src; s.async = false;
+        s.onload = onload; s.onerror = onerror; document.head.appendChild(s);
+      }
+      // 本地路径（放在项目的 javascript/lib 目录下）
+      load('/javascript/lib/chart.umd.min.js', function(){
+        console.log('Loaded local Chart.js');
+      }, function(){
+        console.warn('Local Chart.js not found, falling back to CDN');
+        load('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', function(){
+          console.log('Loaded Chart.js from CDN');
+        }, function(){
+          console.error('Failed to load Chart.js from CDN');
+        });
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="style.css"/>
   <style></style>
 </head>
@@ -203,12 +223,7 @@
     </div>
   </div>
   
-  <div class="bottom-buttons">
-  <button id="close-transport" class="bottom-btn close-transport-btn">
-    <span class="btn-icon">⏹️</span>
-    <span>结束仿真</span>
-  </button>
-</div>
+  <!-- 底部停止仿真按钮已移除，保留时间信息栏右侧的停止按钮 -->
   
   <!-- 模态框 -->
   <div id="vehicle-modal">
@@ -386,8 +401,8 @@
       // 获取初始数据
       fetchAllData();
       
-      // 设置定时更新
-      setInterval(fetchAllData, 5000);
+      // 设置定时更新并保存句柄以便后续清理（降低频率以减少主线程负载）
+      window.updateInterval = setInterval(fetchAllData, 7000);
       
       // 初始化地图
       if (typeof AMap !== 'undefined') {
@@ -469,61 +484,7 @@
         });
       }
       
-      // 停止仿真按钮
-      document.getElementById('close-transport').addEventListener('click', async function() {
-        // 添加确认对话框
-        const confirmed = confirm('确定要结束仿真吗？这将会停止所有车辆的运行。');
-        
-        if (!confirmed) {
-          return;
-        }
-        
-        // 禁用按钮避免重复点击
-        this.disabled = true;
-        this.innerHTML = '<span class="btn-icon">⏳</span><span>停止中...</span>';
-        
-        try {
-          // 调用停止仿真接口
-          const response = await fetch('/sandbox/stopSimulation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            }
-          });
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            // 停止定时更新
-            if (window.updateInterval) {
-              clearInterval(window.updateInterval);
-            }
-            
-            // 显示成功提示
-            showNotification('仿真已成功停止', 'success');
-            
-            // 更新按钮状态
-            this.innerHTML = '<span class="btn-icon">✅</span><span>已停止</span>';
-            
-            // 更新所有车辆状态为停止
-            updateAllVehiclesToStopped();
-            
-            // 清除地图上的车辆标记
-            clearAllMapMarkers();
-            
-          } else {
-            showNotification('停止仿真失败: ' + result.message, 'error');
-            this.disabled = false;
-            this.innerHTML = '<span class="btn-icon">⏹️</span><span>结束仿真</span>';
-          }
-          
-        } catch (error) {
-          console.error('停止仿真请求失败:', error);
-          showNotification('停止仿真请求失败，请检查网络连接', 'error');
-          this.disabled = false;
-          this.innerHTML = '<span class="btn-icon">⏹️</span><span>结束仿真</span>';
-        }
-      });
+      // 停止仿真按钮的事件处理已移至 main.js 的 addTimeWeatherDisplay 中进行绑定
       
       // 点击地图空白处关闭面板
       document.getElementById('container').addEventListener('click', function(e) {
@@ -731,11 +692,36 @@
       }
     }
 
+    // 通用 fetch，兼容后端两种返回格式：直接 JSON 或 {success,message} 包装（message 为 JSON 字符串）
+    async function fetchJsonMaybeWrapped(url) {
+      const resp = await fetch(url);
+      const body = await resp.json();
+      // 如果是统一包装格式
+      if (body && typeof body === 'object' && Object.prototype.hasOwnProperty.call(body, 'success') && Object.prototype.hasOwnProperty.call(body, 'message')) {
+        if (!body.success) return null;
+        try {
+          return typeof body.message === 'string' ? JSON.parse(body.message) : body.message;
+        } catch (e) {
+          // message 可能已经是对象或非 JSON
+          return body.message;
+        }
+      }
+      // 否则直接返回（可能已是对象，也可能是服务器返回的 JSON 字符串）
+      if (typeof body === 'string') {
+        try { return JSON.parse(body); } catch (e) { return body; }
+      }
+      return body;
+    }
+
     // 获取车辆列表
     async function fetchVehicleList() {
       try {
-        const response = await fetch('/data/getCarData');
-        const vehicleData = await response.json();
+        let vehicleData = await fetchJsonMaybeWrapped('/data/getCarData');
+
+        // 后端有时返回单层字符串，需要再 parse 一次
+        if (typeof vehicleData === 'string') {
+          try { vehicleData = JSON.parse(vehicleData); } catch (e) { vehicleData = []; }
+        }
         
         // 获取每个车辆的详细数据
         const vehicles = await Promise.all(vehicleData.map(async (car) => {
@@ -756,24 +742,29 @@
     // 获取单个车辆的仪表盘数据
     async function fetchVehicleDashboardData(uuid) {
       try {
-        const response = await fetch(`/data/getDashboardData?UUID=${uuid}`);
-        const resp = await response.json();
+        let data = await fetchJsonMaybeWrapped(`/data/getDashboardData?UUID=${uuid}`);
+        if (!data) return {};
 
-        if (!resp || !resp.success) {
-          console.error(`getDashboardData error for ${uuid}:`, resp);
-          return {};
-        }
-
-        const data = JSON.parse(resp.message || '{}');
-
+        // 如果包装层次多一层（message 是字符串），fetchJsonMaybeWrapped 已处理
+        
         // 计算有效运时比（荷载非零时长 / 非空闲时长）
         // 这里需要根据实际数据计算，假设有荷载时长字段，这里简化处理
-        const effectiveTimeRatio = (parseFloat(data.totalDistance) || 0) > 0 ?
-          (parseFloat(data.totalDistance) || 0) / ((parseFloat(data.totalDistance) || 0) + (parseFloat(data.waitingTime) || 0)) : 0;
+        // 解析数值字段为数字类型，兼容后端直接返回的字段名
+        const parsed = Object.assign({}, data);
+        ['waitingTime','emptyDistance','wastedLoad','totalWeight','carbonEmission','totalDistance','completedOrders','completeOrderCycle','averageOrderCycle'].forEach(k => {
+          if (parsed[k] !== undefined) parsed[k] = Number(parsed[k]);
+        });
+        // 下划线命名的指标也可能存在，统一解析
+        ['mileage_utilization_rate','carbon_emission_per_unit','load_utilization_rate','capacity_utilization_rate'].forEach(k => {
+          if (parsed[k] !== undefined) parsed[k] = Number(parsed[k]);
+        });
 
-        // 确保返回的字段与后端一致（驼峰和下划线混合）
+        const totalDistance = parsed.totalDistance || 0;
+        const waitingTime = parsed.waitingTime || 0;
+        const effectiveTimeRatio = totalDistance > 0 ? (totalDistance / (totalDistance + waitingTime)) : 0;
+
         return {
-          ...data,
+          ...parsed,
           effectiveTimeRatio
         };
       } catch (err) {
@@ -785,27 +776,16 @@
     // 获取车辆统计指标
     async function fetchCarStatistics() {
       try {
-        const response = await fetch('/data/getAllCarsStatistics');
-        const resp = await response.json();
-
-        if (!resp || !resp.success) {
-          console.error('getAllCarsStatistics error:', resp);
-          return {};
-        }
-
-        const data = JSON.parse(resp.message || '{}');
-
-        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
-        const transformedData = {
-          loadUtilizationRateMean: parseFloat(data.Load_utilization_rate_mean) || 0,
-          loadUtilizationRateVariance: parseFloat(data.Load_utilization_rate_variance) || 0,
-          capacityUtilizationRateMean: parseFloat(data.Capacity_utilization_rate_mean) || 0,
-          capacityUtilizationRateVariance: parseFloat(data.Capacity_utilization_rate_variance) || 0,
-          availableCount: parseInt(data.Available_count) || 0,
-          malfunctionCount: parseInt(data.Malfunction_count) || 0
+        const data = await fetchJsonMaybeWrapped('/data/getAllCarsStatistics');
+        if (!data) return {};
+        return {
+          loadUtilizationRateMean: Number(data.loadUtilizationRateMean || 0) || 0,
+          loadUtilizationRateVariance: Number(data.loadUtilizationRateVariance || 0) || 0,
+          capacityUtilizationRateMean: Number(data.capacityUtilizationRateMean || 0) || 0,
+          capacityUtilizationRateVariance: Number(data.capacityUtilizationRateVariance || 0) || 0,
+          availableCount: parseInt(data.availableCount || 0) || 0,
+          malfunctionCount: parseInt(data.malfunctionCount || 0) || 0
         };
-
-        return transformedData;
       } catch (err) {
         console.error('获取车辆统计指标失败:', err);
         return {};
@@ -815,25 +795,14 @@
     // 获取服务质量指标
     async function fetchServiceQualityMetrics() {
       try {
-        const response = await fetch('/data/getServiceQualityMetrics');
-        const resp = await response.json();
-
-        if (!resp || !resp.success) {
-          console.error('getServiceQualityMetrics error:', resp);
-          return {};
-        }
-
-        const data = JSON.parse(resp.message || '{}');
-
-        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
-        const transformedData = {
-          ontimeDeliveryRate: parseFloat(data.Ontime_delivery_rate) || 0,
-          totalDelayTime: parseFloat(data.Total_delay_time) || 0,
-          averageDelayTime: parseFloat(data.Average_delay_time) || 0,
-          averageOrderCycle: parseFloat(data.Average_order_cycle) || 0
+        const data = await fetchJsonMaybeWrapped('/data/getServiceQualityMetrics');
+        if (!data) return {};
+        return {
+          ontimeDeliveryRate: Number(data.ontimeDeliveryRate || 0) || 0,
+          totalDelayTime: Number(data.totalDelayTime || 0) || 0,
+          averageDelayTime: Number(data.averageDelayTime || 0) || 0,
+          averageOrderCycle: Number(data.averageOrderCycle || 0) || 0
         };
-
-        return transformedData;
       } catch (err) {
         console.error('获取服务质量指标失败:', err);
         return {};
@@ -843,14 +812,11 @@
     // 获取系统指标
     async function fetchSystemMetrics() {
       try {
-        const response = await fetch('/data/getSystemMetrics');
-        const data = await response.json();
-        
-        // 后端返回的是下划线命名，需要转换为驼峰命名以匹配前端定义
+        const data = await fetchJsonMaybeWrapped('/data/getSystemMetrics');
+        if (!data) return {};
         const transformedData = {
-          systemCriticalLoad: parseFloat(data.System_critical_load) || 0
+          systemCriticalLoad: parseFloat(data.System_critical_load || data.system_critical_load || 0) || 0
         };
-        
         return transformedData;
       } catch (err) {
         console.error('获取系统指标失败:', err);
@@ -877,10 +843,19 @@
     // 更新车辆列表
     function updateVehicleList(vehicleList) {
       const tbody = document.querySelector('#vehicle-list tbody');
-      tbody.innerHTML = '';
-      
+      if (!tbody) return;
+
+      // 保留全局 vehicles 引用
       vehicles = vehicleList;
-      
+
+      // 构建现有行的映射
+      const existing = new Map();
+      Array.from(tbody.children).forEach(row => {
+        if (row.dataset && row.dataset.uuid) existing.set(row.dataset.uuid, row);
+      });
+
+      const seen = new Set();
+
       vehicleList.forEach(vehicle => {
         // 初始化车辆历史数据存储
         if (!vehicleMetricsHistory[vehicle.UUID]) {
@@ -889,7 +864,7 @@
             vehicleMetricsHistory[vehicle.UUID][metric.id] = [];
           });
         }
-        
+
         // 更新历史数据（保留最近5个周期）
         VEHICLE_METRICS.forEach(metric => {
           const value = vehicle.metrics[metric.id];
@@ -900,31 +875,72 @@
             }
           }
         });
-        
+
         const status = STATUS_MAP[vehicle.state] || { 
           text: vehicle.state, 
           class: 'status-available', 
           icon: '🚗' 
         };
-        
-        const row = document.createElement('tr');
-        row.dataset.uuid = vehicle.UUID;
-        row.innerHTML = `
-          <td title="${vehicle.UUID}">${vehicle.UUID.substring(0, 8)}...</td>
-          <td><span style="opacity: 0.9;">🚚</span> 货车</td>
-          <td><span class="vehicle-status ${status.class}">${status.text}</span></td>
-          <td><strong>${vehicle.metrics.completedOrders || 0}</strong></td>
-        `;
-        
-        row.addEventListener('click', function() {
-          showVehicleDetail(vehicle);
-        });
-        
-        tbody.appendChild(row);
+
+        seen.add(vehicle.UUID);
+
+        let row = existing.get(vehicle.UUID);
+        if (!row) {
+          // 创建新行
+          row = document.createElement('tr');
+          row.dataset.uuid = vehicle.UUID;
+
+          const idTd = document.createElement('td');
+          idTd.title = vehicle.UUID;
+          idTd.textContent = vehicle.UUID.substring(0, 8) + '...';
+
+          const typeTd = document.createElement('td');
+          typeTd.innerHTML = '<span style="opacity: 0.9;">🚚</span> 货车';
+
+          const statusTd = document.createElement('td');
+          const statusSpan = document.createElement('span');
+          statusSpan.className = `vehicle-status ${status.class}`;
+          statusSpan.textContent = status.text;
+          statusTd.appendChild(statusSpan);
+
+          const ordersTd = document.createElement('td');
+          const strong = document.createElement('strong');
+          strong.textContent = vehicle.metrics.completedOrders || 0;
+          ordersTd.appendChild(strong);
+
+          row.appendChild(idTd);
+          row.appendChild(typeTd);
+          row.appendChild(statusTd);
+          row.appendChild(ordersTd);
+
+          row.addEventListener('click', function() { showVehicleDetail(vehicle); });
+
+          tbody.appendChild(row);
+        } else {
+          // 更新已有行的状态和订单数
+          const statusSpan = row.querySelector('.vehicle-status');
+          if (statusSpan) {
+            statusSpan.className = `vehicle-status ${status.class}`;
+            statusSpan.textContent = status.text;
+          }
+          const strong = row.querySelector('td:last-child strong');
+          if (strong) strong.textContent = vehicle.metrics.completedOrders || 0;
+        }
       });
-      
-      // 更新散点图
-      updateScatterChart();
+
+      // 移除已不存在的行
+      existing.forEach((row, uuid) => {
+        if (!seen.has(uuid)) {
+          try { tbody.removeChild(row); } catch (e) { /* ignore */ }
+        }
+      });
+
+      // 更新散点图：如果正在交互则延迟刷新
+      if (typeof window !== 'undefined' && window.mapInteracting) {
+        try { window.pendingScatterUpdate = true; } catch (e) {}
+      } else {
+        try { updateScatterChart(); } catch (e) { /* ignore */ }
+      }
     }
 
     // 显示车辆详情
@@ -1062,8 +1078,81 @@
     function updateServiceQualityMetrics(data) {
       const metricsGrid = document.getElementById('service-quality-metrics-grid');
       if (!metricsGrid) return;
-      
-      metricsGrid.innerHTML = '';
+    // 将所有车辆标记为已停止（UI 层面）并尝试停止任何全局动画/事件管理器
+    function updateAllVehiclesToStopped() {
+      try {
+        // 停止模块化的 animationManager（如果挂载到 window）
+        if (window.animationManager && typeof window.animationManager.destroy === 'function') {
+          window.animationManager.destroy();
+        }
+
+        // 停止模块化的 eventManager（如果挂载到 window）
+        if (window.eventManager) {
+          if (typeof window.eventManager.stop === 'function') window.eventManager.stop();
+          else if (typeof window.eventManager.destroy === 'function') window.eventManager.destroy();
+        }
+
+        // 清理客户端侧车辆动画/状态（如果全局 cars 数组存在）
+        if (window.cars && Array.isArray(window.cars)) {
+          window.cars.forEach(car => {
+            try {
+              car.status = 0;
+              car.isEvent = 0;
+              if (car.marker && map) {
+                // 可选：切换为静态图标或隐藏
+                // map.remove(car.marker);
+              }
+            } catch (e) { /* ignore individual errors */ }
+          });
+        }
+
+        // 更新本页面的车辆列表视图（隐藏详情并刷新列表）
+        vehicles = [];
+        const tbody = document.querySelector('#vehicle-list tbody');
+        if (tbody) tbody.innerHTML = '';
+      } catch (e) {
+        console.error('updateAllVehiclesToStopped error:', e);
+      }
+    }
+
+    // 从地图上移除所有与车辆相关的标记和路径
+    function clearAllMapMarkers() {
+      try {
+        // 若 main.js 使用全局 cars 列表并在每个对象上保存 marker，移除它们
+        if (window.cars && Array.isArray(window.cars) && map) {
+          window.cars.forEach(car => {
+            try {
+              if (car.marker) {
+                map.remove(car.marker);
+                car.marker = null;
+              }
+            } catch (e) { /* ignore */ }
+          });
+        }
+
+        // 如果本页有 vehicles 并包含 marker，也一并移除
+        if (Array.isArray(vehicles) && map) {
+          vehicles.forEach(v => {
+            try {
+              if (v.marker) {
+                map.remove(v.marker);
+                v.marker = null;
+              }
+            } catch (e) { /* ignore */ }
+          });
+        }
+
+        // 尝试停止并清理全局动画管理器里的所有动画
+        if (window.animationManager && typeof window.animationManager.destroy === 'function') {
+          window.animationManager.destroy();
+        }
+      } catch (e) {
+        console.error('clearAllMapMarkers error:', e);
+      }
+    }
+    
+    // 显示更新提示
+    function showUpdateNotification() {/* Lines 1471-1475 omitted */}
       
       SERVICE_QUALITY_METRICS.forEach(metric => {
         const value = data[metric.id] || 0;
@@ -1357,6 +1446,18 @@
 
     // 初始化图表
     function initCharts() {
+      if (typeof Chart === 'undefined') {
+        console.warn('Chart.js 未加载，图表功能将被禁用');
+        // 隐藏所有图表容器以避免空引用错误
+        try {
+          const containers = ['system-chart-container','scatter-chart-container','vehicle-metric-chart-container','service-quality-chart-container','metric-chart-container','service-quality-metric-chart-container'];
+          containers.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
+        } catch (e) { /* ignore */ }
+        return;
+      }
       // 系统图表
       const systemCtx = document.getElementById('system-chart').getContext('2d');
       systemChart = new Chart(systemCtx, {

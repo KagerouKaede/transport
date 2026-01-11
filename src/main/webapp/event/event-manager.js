@@ -536,10 +536,12 @@ export class EventManager {
         vehicle.isEvent = 3;
         vehicle.status = 2;
         
-        // 停止车辆动画
-        if (vehicle.animationTimer) {
-            clearInterval(vehicle.animationTimer);
-        }
+        // 停止车辆动画（如果使用 AnimationManager 管理动画则调用其停止方法）
+        try {
+            if (window.animationManager && typeof window.animationManager.stopVehicleAnimation === 'function') {
+                window.animationManager.stopVehicleAnimation(vehicle.UUID);
+            }
+        } catch (e) { console.warn('stopVehicleAnimation failed', e); }
         
         // 记录当前信息
         const closureInfo = {
@@ -620,10 +622,12 @@ export class EventManager {
         vehicle.status = 2;
         vehicle.isEvent = 3;
         
-        // 停止车辆动画
-        if (vehicle.animationTimer) {
-            clearInterval(vehicle.animationTimer);
-        }
+        // 停止车辆动画（兼容 AnimationManager）
+        try {
+            if (window.animationManager && typeof window.animationManager.stopVehicleAnimation === 'function') {
+                window.animationManager.stopVehicleAnimation(vehicle.UUID);
+            }
+        } catch (e) { console.warn('stopVehicleAnimation failed', e); }
         
         // 记录当前信息
         const closureInfo = {
@@ -889,13 +893,15 @@ export class EventManager {
     
     // 添加天气事件信息窗口
 addWeatherInfoWindow(event) {
+    const remaining = this.getRemainingMinutes(event);
+    const remainingText = (remaining === null) ? '未知' : (remaining + '分钟');
     const content = `
         <div class="event-info">
             <h4>天气事件</h4>
             <p><strong>类型:</strong> ${this.getWeatherName(event.weatherType)}</p>
             <p><strong>严重程度:</strong> ${this.getSeverityName(event.severity)}</p>
-            <p><strong>剩余时间:</strong> ${Math.round(event.duration - (Date.now() - event.startTime) / 60000)}分钟</p>
-            <p><strong>速度影响:</strong> ${Math.round((1 - event.speedFactor) * 100)}%减速</p>
+            <p><strong>剩余时间:</strong> ${remainingText}</p>
+            <p><strong>速度影响:</strong> ${isFinite((1 - event.speedFactor) * 100) ? Math.round((1 - event.speedFactor) * 100) + '%减速' : '未知'}</p>
         </div>
     `;
     
@@ -919,13 +925,17 @@ addWeatherInfoWindow(event) {
 
 // 添加拥堵事件信息窗口
 addJamInfoWindow(event) {
+    const remainingJam = this.getRemainingMinutes(event);
+    const remainingJamText = (remainingJam === null) ? '未知' : (remainingJam + '分钟');
+    const pathDistance = this.calculatePathDistance(event.path);
+    const pathDistanceText = isFinite(pathDistance) ? Math.round(pathDistance * 1000) + '米' : '未知';
     const content = `
         <div class="event-info">
             <h4>交通拥堵</h4>
             <p><strong>严重程度:</strong> ${this.getSeverityName(event.severity)}</p>
-            <p><strong>剩余时间:</strong> ${Math.round(event.duration - (Date.now() - event.startTime) / 60000)}分钟</p>
-            <p><strong>速度影响:</strong> ${Math.round((1 - event.speedFactor) * 100)}%减速</p>
-            <p><strong>路段长度:</strong> ${Math.round(this.calculatePathDistance(event.path) * 1000)}米</p>
+            <p><strong>剩余时间:</strong> ${remainingJamText}</p>
+            <p><strong>速度影响:</strong> ${isFinite((1 - event.speedFactor) * 100) ? Math.round((1 - event.speedFactor) * 100) + '%减速' : '未知'}</p>
+            <p><strong>路段长度:</strong> ${pathDistanceText}</p>
         </div>
     `;
     
@@ -953,14 +963,16 @@ addJamInfoWindow(event) {
 
 // 添加事故事件信息窗口
 addAccidentInfoWindow(event, vehicle) {
+    const remainingAcc = this.getRemainingMinutes(event);
+    const remainingAccText = (remainingAcc === null) ? '未知' : (remainingAcc + '分钟');
     const content = `
         <div class="event-info">
             <h4>交通事故</h4>
             <p><strong>严重程度:</strong> ${this.getSeverityName(event.severity)}</p>
-            <p><strong>剩余时间:</strong> ${Math.round(event.duration - (Date.now() - event.startTime) / 60000)}分钟</p>
+            <p><strong>剩余时间:</strong> ${remainingAccText}</p>
             <p><strong>停止时间:</strong> ${event.stopDuration}分钟</p>
-            <p><strong>速度影响:</strong> ${Math.round((1 - event.speedFactor) * 100)}%减速</p>
-            <p><strong>涉及车辆:</strong> ${vehicle.UUID.substring(0, 8)}...</p>
+            <p><strong>速度影响:</strong> ${isFinite((1 - event.speedFactor) * 100) ? Math.round((1 - event.speedFactor) * 100) + '%减速' : '未知'}</p>
+            <p><strong>涉及车辆:</strong> ${vehicle && vehicle.UUID ? vehicle.UUID.substring(0, 8) + '...' : '未知'}</p>
         </div>
     `;
     
@@ -984,14 +996,19 @@ addAccidentInfoWindow(event, vehicle) {
 
     // 添加道路封闭信息窗口
     addClosureInfoWindow(event) {
+        const remainingClosure = this.getRemainingMinutes(event);
+        const remainingClosureText = (remainingClosure === null) ? '未知' : (remainingClosure + '分钟');
+        const closureDistance = this.calculatePathDistance(event.path);
+        const closureDistanceText = isFinite(closureDistance) ? Math.round(closureDistance * 1000) + '米' : '未知';
+        const triggerVehicleText = event.triggerVehicle ? (String(event.triggerVehicle).substring(0,8) + '...') : '未知';
         const content = `
             <div class="event-info">
                 <h4>道路封闭</h4>
                 <p><strong>类型:</strong> ${event.closureType === 'full' ? '完全封闭' : '部分封闭'}</p>
                 <p><strong>严重程度:</strong> ${this.getSeverityName(event.severity)}</p>
-                <p><strong>剩余时间:</strong> ${Math.round(event.duration - (Date.now() - event.startTime) / 60000)}分钟</p>
-                <p><strong>封闭长度:</strong> ${Math.round(this.calculatePathDistance(event.path) * 1000)}米</p>
-                <p><strong>触发车辆:</strong> ${event.triggerVehicle.substring(0, 8)}...</p>
+                <p><strong>剩余时间:</strong> ${remainingClosureText}</p>
+                <p><strong>封闭长度:</strong> ${closureDistanceText}</p>
+                <p><strong>触发车辆:</strong> ${triggerVehicleText}</p>
             </div>
         `;
         
@@ -1230,6 +1247,15 @@ addAccidentInfoWindow(event, vehicle) {
     getRandomDuration(range) {
         if (!range || range.length !== 2) return 15;
         return range[0] + Math.random() * (range[1] - range[0]);
+    }
+
+    // 计算事件剩余分钟数，返回整数分钟或 null（未知）
+    getRemainingMinutes(event) {
+        if (!event || !event.startTime || !event.duration) return null;
+        const elapsedMin = (Date.now() - event.startTime) / 60000;
+        const remaining = Math.round(event.duration - elapsedMin);
+        if (!isFinite(remaining)) return null;
+        return remaining >= 0 ? remaining : 0;
     }
     
     getRandomMapPosition() {
