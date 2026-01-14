@@ -68,6 +68,11 @@ export class EventManager {
         // 更新当前时间和状态
         this.simulationCycle++;
     
+            // 强制测试天气事件生成
+        if (this.simulationCycle % 10 === 0 && this.activeEvents.weather.length === 0) {
+        console.log('强制测试天气事件生成');
+        this.generateWeatherEvent(this.eventConfig);
+    }
         
         if (this.timeManager) {
             this.timeManager.update();
