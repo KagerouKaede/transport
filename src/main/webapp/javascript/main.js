@@ -829,6 +829,7 @@ async function update()
     // 更新事件管理器
     if (eventManager) {
         eventManager.update();
+        console.log('事件管理器更新完成');
     }
 }
 
