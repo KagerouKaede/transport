@@ -1,6 +1,6 @@
 plugins {
     java
-    id("org.springframework.boot") version "4.0.3"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.github.node-gradle.node") version "7.1.0"
 }
@@ -43,26 +43,23 @@ tasks.register<com.github.gradle.node.yarn.task.YarnTask>("yarnInstall") {
     args.set(listOf("install"))
     workingDir.set(file("frontend"))
 }
-
 tasks.register<com.github.gradle.node.yarn.task.YarnTask>("yarnBuild") {
     args.set(listOf("run", "build"))
     workingDir.set(file("frontend"))
     dependsOn("yarnInstall")
 }
-
 tasks.register<Copy>("copyFrontend") {
     dependsOn("yarnBuild")
     from("frontend/dist")
-    into("src/main/resources/static")
+    into("src/main/resources/webapp")
     doFirst {
-        delete("src/main/resources/static")
+        delete("src/main/resources/webapp")
     }
 }
 
 tasks.processResources {
     dependsOn("copyFrontend")
 }
-
 tasks.clean {
-    delete("frontend/dist", "src/main/resources/static")
+    delete("frontend/dist", "src/main/resources/webapp")
 }

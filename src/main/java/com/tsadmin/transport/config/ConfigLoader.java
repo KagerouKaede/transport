@@ -17,7 +17,7 @@ import tools.jackson.databind.ObjectMapper;
  * 读取通用 JSON 配置，从 resources/config.json 加载对应配置
  */
 public final class ConfigLoader
-{
+{ 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LogManager.getLogger(ConfigLoader.class);
     private static String configUUID;

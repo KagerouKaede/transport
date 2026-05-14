@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tsadmin.transport.TransportApplication;
 import com.tsadmin.transport.config.ConfigLoader;
-// import com.tsadmin.transport.dao.DBManager;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -30,7 +29,7 @@ import tools.jackson.databind.node.ObjectNode;
 public class SandboxController
 {
     private static final Logger logger = LogManager.getLogger(SandboxController.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OM = new ObjectMapper();
 
     private Map<String, String> reply(boolean success, String message)
     {
@@ -85,7 +84,7 @@ public class SandboxController
      * 获取默认配置
      * <p>数据返回格式：{"success":{@code boolean}, "message":{@code String}}
      */
-    @GetMapping("configTemplate")
+    @GetMapping("/configTemplate")
     public Map<String, String> getConfigTemplate()
     {
         ConfigLoader.use("0");
@@ -153,7 +152,7 @@ public class SandboxController
             }
 
             // 当 Main.random_seed 为 null 时，生成随机种子
-            JsonNode contentNode = objectMapper.readTree(content);
+            JsonNode contentNode = OM.readTree(content);
             JsonNode configsNode = contentNode.get("configs");
             if (configsNode != null)
             {
@@ -166,7 +165,7 @@ public class SandboxController
                     configsObjectNode.put("Main.random_seed", randomSeed);
 
                     // 将修改后的JSON转换回字符串
-                    content = objectMapper.writeValueAsString(contentNode);
+                    content = OM.writeValueAsString(contentNode);
                 }
             }
 
@@ -178,7 +177,7 @@ public class SandboxController
                 ConfigLoader.use(uuid, true);
             }
 
-            reply(success, objectMapper.writeValueAsString(Map.of("UUID", uuid)));
+            reply(success, OM.writeValueAsString(Map.of("UUID", uuid)));
         }
         catch (Exception e)
         {

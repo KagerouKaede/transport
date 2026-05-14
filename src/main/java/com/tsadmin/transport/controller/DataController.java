@@ -14,12 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.JsonNodeException;
 
-import com.tsadmin.transport.domain.CarManager;
-import com.tsadmin.transport.domain.share.PathNode;
-// import com.tsadmin.transport.dao.DBManager;
-import com.tsadmin.transport.entity.Vehicle;
-import com.tsadmin.transport.entity.Vehicle.VehState;
-import com.tsadmin.transport.entity.CarStatistics;
+import com.tsadmin.transport.common.enums.VehicleStatus;
+import com.tsadmin.transport.common.share.PathNode;
+import com.tsadmin.transport.domain.entity.CarStatistics;
+import com.tsadmin.transport.domain.entity.Vehicle;
+import com.tsadmin.transport.service.core.VehicleService;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -120,7 +119,7 @@ public class DataController
     {
         //Double cycleCost = 0.0;
         
-        Vehicle car = CarManager.carMap.get(uuid);
+        Vehicle car = VehicleService.carMap.get(uuid);
         if (car == null) {
             return null;
         }
@@ -179,7 +178,7 @@ public class DataController
         List<Double> loadRates = new ArrayList<>();
         List<Double> capacityRates = new ArrayList<>();
 
-        for (Vehicle car : CarManager.carMap.values()) {
+        for (Vehicle car : VehicleService.carMap.values()) {
             CarStatistics stats = car.getStatistics();
             if (stats != null) {
                 stats.calculateLoad_utilization_rate(car);
@@ -187,8 +186,8 @@ public class DataController
                 loadRates.add(stats.getLoad_utilization_rate());
                 capacityRates.add(stats.getCapacity_utilization_rate());
             }
-            if (car.getState() == VehState.AVAILABLE) availableCount++;
-            else if (car.getState() == VehState.FREEZE) malfunctionCount++;
+            if (car.getState() == VehicleStatus.AVAILABLE) availableCount++;
+            else if (car.getState() == VehicleStatus.FREEZE) malfunctionCount++;
         }
 
         double loadMean = loadRates.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
@@ -226,7 +225,7 @@ public class DataController
 
         double orderCycleSum = 0.0;
         int count = 0;
-        for (Vehicle car : CarManager.carMap.values()) {
+        for (Vehicle car : VehicleService.carMap.values()) {
             if (car.getStatistics() != null) {
                 orderCycleSum += car.getStatistics().getAverageOrderCycle();
                 count++;
@@ -255,7 +254,7 @@ public class DataController
     public void getSystemMetrics()
     {
         Map<String, String> data = new HashMap<>();
-        int carCount = CarManager.carMap.size();
+        int carCount = VehicleService.carMap.size();
         int demandCount = 0;//DBManager.getCount("demand");
         
         double systemCriticalLoad = carCount * demandCount / 70000.0;
@@ -285,7 +284,7 @@ public class DataController
     @GetMapping("/destination")
     public String getDestination(@RequestParam String uuid)
     {
-        Vehicle car = CarManager.carMap.get(uuid);
+        Vehicle car = VehicleService.carMap.get(uuid);
         Map<String, Double> dest = null;
 
         if (car == null) {
@@ -307,7 +306,7 @@ public class DataController
         } catch (Exception e) {
             logger.warn("state timer check failed for UUID {}: {}", uuid, e.getMessage());
         }
-        if(car.getState() == VehState.FREEZE) {
+        if(car.getState() == VehicleStatus.FREEZE) {
             FreezeTimes++;
             Random rand = new Random();
             int randomNum = rand.nextInt(70) + 3; // 生成3到72之间的随机数
